@@ -15,18 +15,37 @@
 | 消息队列 | [BullMQ](https://docs.bullmq.io/) (Redis) |
 | AI SDK | [Vercel AI SDK](https://sdk.vercel.ai/) |
 
-## 快速开始
+## 启动命令
 
-### 1. 环境准备
+### 一键启动（推荐）
 
 ```bash
-# 安装 Docker Desktop (macOS)
-brew install --cask docker
+npm run dev:feishu
+```
 
-# 或直接下载: https://www.docker.com/products/docker-desktop/
+这条命令会依次执行：
+| 步骤 | 命令 | 作用 |
+|------|------|------|
+| 1 | `kill $(lsof -ti:3000)` | 杀掉旧 Dev Server |
+| 2 | `pkill -9 -f ngrok` | 杀掉旧 ngrok 隧道 |
+| 3 | `pkill -9 -f cron-worker-start` | 杀掉旧定时 Worker |
+| 4 | `npx tsx src/lib/cron-worker-start.ts &` | **启动定时任务 Worker**（监听 BullMQ 执行定时工作流） |
+| 5 | `ngrok http 3000 &` | 启动内网穿透（飞书回调用） |
+| 6 | `next dev --webpack` | 启动 Next.js 开发服务器 |
 
-# 启动 Docker Desktop 后，拉取并启动服务
-docker compose up -d
+### 单独启动 Worker
+
+```bash
+npm run worker
+```
+
+Worker 负责：从数据库加载定时任务 → 注册到 BullMQ → 到点触发工作流执行。
+
+### 启动数据库
+
+```bash
+npm run docker:up
+```
 ```
 
 ### 2. 配置环境变量

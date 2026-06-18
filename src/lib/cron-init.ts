@@ -41,6 +41,9 @@ export async function initCronSystem() {
   }
 }
 
+// Auto-execute on module load
+initCronSystem()
+
 /**
  * Sync: called after CRUD API changes (create/update/delete)
  */
