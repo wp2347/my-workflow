@@ -148,12 +148,26 @@ interface McpBinding {
 - **合并规则(替换语义):** 节点级某字段非空数组 → 完全覆盖工作流级;为空 → 回退工作流级
 - **悬空引用:** 扩展被删除后,JSON 里的 ID 变悬空。执行时遇到不存在的 ID → `console.warn` + 跳过,不阻断工作流。
 
-### 2.5 新增依赖
+### 2.5 ExecutionContext 类型变更
+
+`src/types/workflow.ts` 的 `ExecutionContext` 新增字段:
+
+```typescript
+export interface ExecutionContext {
+  // ...现有字段
+  workflowExtensions?: ExtensionBindings   // 工作流级扩展绑定(执行入口加载)
+}
+```
+
+`executor.ts` 的 `executeWorkflow` 在构建 context 时,从 Workflow.config 提取 extensions 存入。
+
+### 2.6 新增依赖
 
 ```json
 {
   "@ai-sdk/mcp": "^2.0.3",
-  "@modelcontextprotocol/sdk": "^1.29.0"
+  "@modelcontextprotocol/sdk": "^1.29.0",
+  "jszip": "^3.10.1"
 }
 ```
 
@@ -302,9 +316,11 @@ MCP测试: { status: "online"|"error", capabilities: { tools, resources, prompts
 
 在现有 `executeLLMNode` 中,构建 `genOptions` 前插入扩展加载阶段:
 
+> **注意:** `executeLLMNode` 签名为 `(node, context)`,无 `workflowConfig` 参数。工作流级 extensions 存在 `Workflow.config.extensions` 里。需在 `executor.ts` 的 `executeWorkflow` 入口加载工作流 config 时提取 extensions 存入 `ExecutionContext`(新增 `workflowExtensions` 字段),避免执行时额外 DB 查询。
+
 ```typescript
 // ===== 扩展加载阶段(新增) =====
-const extensions = mergeExtensions(workflowConfig, nodeConfig)
+const extensions = mergeExtensions(context.workflowExtensions, nodeConfig)
 const skillPayload = await loadSkills(extensions.skills, context)
 const promptPayload = renderPrompts(extensions.prompts, context)
 const mcpPayload = await loadMcpExtensions(extensions.mcp, context)
@@ -377,7 +393,7 @@ interface McpPayload {
 ```
 
 **连接管理:**
-- **http/sse:** 每次执行用 `@ai-sdk/mcp` 的 `experimental_createMCPClient` 新建连接,执行完关闭
+- **http/sse:** 每次执行用 `@ai-sdk/mcp` 的 MCP client 新建连接(具体 API 名称以 `@ai-sdk/mcp@2.0.3` 实际导出为准,可能为 `createMCPClient` 或 `experimental_createMCPClient`),执行完关闭
 - **stdio 进程池:**
   - key = `serverId`,首次使用 spawn 子进程并存入池
   - 引用计数:执行前 +1,执行后 -1
