@@ -16,7 +16,10 @@ import { executeConditionNode } from "./nodes/condition"
 import { executeMergeNode } from "./nodes/merge"
 import { executeCronTriggerNode } from "./nodes/cron_trigger"
 
-// ---- Executor Registry ----
+// ============================================================
+// 节点执行器注册表
+// 每种节点类型对应一个执行函数，由 executeWorkflow 调度
+// ============================================================
 
 const nodeExecutors: Record<string, NodeExecutor> = {
   input: executeInputNode,
@@ -30,13 +33,16 @@ const nodeExecutors: Record<string, NodeExecutor> = {
 }
 
 /**
- * 注册自定义执行器（用于扩展节点类型）
+ * 注册自定义执行器（插件化扩展新节点类型）
  */
 export function registerExecutor(type: string, executor: NodeExecutor) {
   nodeExecutors[type] = executor
 }
 
-// ---- Retry with exponential backoff ----
+// ============================================================
+// 重试机制：指数退避
+// 节点配置 retryCount/retryDelay/backoffMultiplier
+// ============================================================
 
 interface RetryConfig {
   maxRetries: number           // 最大重试次数（默认 0）
@@ -44,6 +50,7 @@ interface RetryConfig {
   backoffMultiplier: number    // 退避倍数（默认 2）
 }
 
+/** 从节点配置中提取重试参数 */
 function getRetryConfig(node: WorkflowNode): RetryConfig {
   const config = (node.data.config as Record<string, unknown>) || {}
   return {
@@ -54,7 +61,8 @@ function getRetryConfig(node: WorkflowNode): RetryConfig {
 }
 
 /**
- * 带指数退避的执行单个节点
+ * 带指数退避的执行单个节点。
+ * 失败后按 delay * multiplier^attempt 递增等待时间重试。
  */
 async function executeNodeWithRetry(
   node: WorkflowNode,
@@ -75,13 +83,15 @@ async function executeNodeWithRetry(
         await new Promise((r) => setTimeout(r, delay))
         continue
       }
-      throw error // All retries exhausted
+      throw error // 所有重试已耗尽
     }
   }
   throw new Error("Unreachable")
 }
 
-// ---- Topological Sort ----
+// ============================================================
+// 拓扑排序：将 DAG 节点按依赖关系排序为执行序列
+// ============================================================
 
 export function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[]): WorkflowNode[] {
   const adjacency = new Map<string, string[]>()
@@ -99,6 +109,7 @@ export function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[]): W
     inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1)
   }
 
+  // BFS：入度为 0 的节点先入队
   const queue: string[] = []
   for (const [nodeId, degree] of inDegree) {
     if (degree === 0) queue.push(nodeId)
@@ -122,7 +133,14 @@ export function topologicalSort(nodes: WorkflowNode[], edges: WorkflowEdge[]): W
   return sorted
 }
 
-// ---- Main Execution ----
+// ============================================================
+// 主执行流程
+// 工作流引擎的核心入口：
+//   1. 拓扑排序确定执行顺序
+//   2. 按序执行节点（含重试）
+//   3. 条件节点分支处理（跳过不匹配的分支）
+//   4. 收集日志和结果
+// ============================================================
 
 export async function executeWorkflow(
   nodes: WorkflowNode[],
@@ -131,7 +149,22 @@ export async function executeWorkflow(
   workflowId: string,
   executionId: string,
 ): Promise<ExecutionResult> {
+  // 拓扑排序：确保先执行依赖节点
   const sortedNodes = topologicalSort(nodes, edges)
+
+  // 加载工作流级扩展绑定
+  let workflowExtensions: ExecutionContext["workflowExtensions"]
+  try {
+    const { prisma } = await import("@/lib/prisma")
+    const wf = await prisma.workflow.findUnique({
+      where: { id: workflowId },
+      select: { config: true },
+    })
+    const config = (wf?.config as Record<string, unknown>) || {}
+    workflowExtensions = (config.extensions as ExecutionContext["workflowExtensions"]) || undefined
+  } catch (error) {
+    console.warn("[executor] Failed to load workflow extensions:", error)
+  }
 
   const context: ExecutionContext = {
     workflowId,
@@ -139,6 +172,7 @@ export async function executeWorkflow(
     input,
     nodeResults: new Map(),
     logs: [],
+    workflowExtensions,
   }
 
   const startTime = Date.now()
@@ -147,7 +181,7 @@ export async function executeWorkflow(
 
   try {
     for (const node of sortedNodes) {
-      // Skip nodes in inactive branches
+      // 跳过已因条件分支被排除的节点
       if (skippedNodes.has(node.id)) continue
 
       const log: ExecutionLog = {
@@ -164,7 +198,7 @@ export async function executeWorkflow(
           throw new Error(`No executor found for node type: ${node.data.type}`)
         }
 
-        // Execute with retry
+        // 执行节点（带重试）
         const result = await executeNodeWithRetry(node, executor, context)
         context.nodeResults.set(node.id, result)
 
@@ -172,12 +206,10 @@ export async function executeWorkflow(
         log.output = result
         log.durationMs = Date.now() - startTime
 
-        // Handle condition node branching
+        // 条件节点分支处理：根据条件结果跳过不匹配的分支
         if (node.data.type === "condition" && result && typeof result === "object") {
           const condResult = (result as Record<string, unknown>).result as boolean
-          // Find which branch to skip
           const skipHandle = condResult ? "false" : "true"
-          // Find ALL downstream nodes on the skipped branch
           const toSkip = findDownstreamNodes(node.id, skipHandle, nodes, edges)
           for (const nid of toSkip) skippedNodes.add(nid)
         }
@@ -187,7 +219,7 @@ export async function executeWorkflow(
         log.error = msg
         lastError = msg
 
-        // Store error in results so downstream error-handler nodes can access it
+        // 将错误信息存入结果，供下游错误处理节点使用
         context.nodeResults.set(node.id, {
           error: msg,
           raw: msg,
@@ -195,7 +227,7 @@ export async function executeWorkflow(
           failedNodeType: node.data.type,
         })
 
-        // Continue to let error-handler nodes process the failure
+        // 继续执行，让错误处理节点有机会处理
         continue
       }
 
@@ -225,6 +257,7 @@ export async function executeWorkflow(
   }
 }
 
+/** 从执行结果中提取最终输出（优先 output 节点，其次最后一个节点） */
 function findFinalOutput(sortedNodes: WorkflowNode[], context: ExecutionContext): unknown {
   for (let i = sortedNodes.length - 1; i >= 0; i--) {
     const node = sortedNodes[i]
@@ -236,6 +269,7 @@ function findFinalOutput(sortedNodes: WorkflowNode[], context: ExecutionContext)
   return lastNode ? context.nodeResults.get(lastNode.id) : null
 }
 
+/** 从条件节点出发，找到需要跳过的下游节点（BFS 遍历） */
 function findDownstreamNodes(
   startId: string,
   skipHandle: string,
