@@ -18,10 +18,11 @@ role: ${prompt.role}
 ${prompt.content}`
 
     const zipBuffer = await createZip([{ name: "PROMPT.md", content }])
+    const safeName = encodeURIComponent(prompt.name)
     return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="prompt-${prompt.name}.zip"`,
+        "Content-Disposition": `attachment; filename="prompt-${safeName}.zip"; filename*=UTF-8''prompt-${safeName}.zip`,
       },
     })
   } catch (error) {

@@ -31,10 +31,11 @@ ${skill.content}`
     }
 
     const zipBuffer = await createZip(files)
+    const safeName = encodeURIComponent(skill.name)
     return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": `attachment; filename="skill-${skill.name}.zip"`,
+        "Content-Disposition": `attachment; filename="skill-${safeName}.zip"; filename*=UTF-8''skill-${safeName}.zip`,
       },
     })
   } catch (error) {
