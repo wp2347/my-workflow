@@ -46,7 +46,7 @@ export async function renderPrompts(
   for (const prompt of prompts) {
     let rendered = resolveExpression(prompt.content, context)
 
-    const variables = (prompt.variables as PromptVariable[]) || []
+    const variables = (prompt.variables as unknown as PromptVariable[]) || []
     for (const v of variables) {
       const placeholder = `{{${v.name}}}`
       if (rendered.includes(placeholder)) {

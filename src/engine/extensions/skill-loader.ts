@@ -5,7 +5,7 @@ import type { ExecutionContext } from "@/types/workflow"
 
 export interface SkillPayload {
   systemContext: string[]
-  loadSkillTool?: Record<string, ReturnType<typeof tool>>
+  loadSkillTool?: Record<string, unknown>
 }
 
 /**
@@ -67,7 +67,7 @@ export async function loadSkills(
         }
         return skill.content
       },
-    }),
+    } as never),
   }
 
   return { systemContext, loadSkillTool }
