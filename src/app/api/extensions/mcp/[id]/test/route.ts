@@ -22,10 +22,12 @@ export async function POST(
         : {}
 
       if (server.transport === "http" || server.transport === "sse") {
-        const mcpModule = await import("@ai-sdk/mcp")
-        const createMCPClient = (mcpModule as { createMCPClient?: Function; experimental_createMCPClient?: Function })
-          .createMCPClient || (mcpModule as { experimental_createMCPClient?: Function }).experimental_createMCPClient
-        const client = await (createMCPClient as Function)({
+        const mcpModule = await import("@ai-sdk/mcp") as {
+          createMCPClient?: (opts: { transport: { type: string; url: string; headers: Record<string, string> } }) => Promise<{ tools: () => Promise<Record<string, unknown>>; close?: () => Promise<void> }>
+          experimental_createMCPClient?: (opts: { transport: { type: string; url: string; headers: Record<string, string> } }) => Promise<{ tools: () => Promise<Record<string, unknown>>; close?: () => Promise<void> }>
+        }
+        const createMCPClient = mcpModule.createMCPClient || mcpModule.experimental_createMCPClient
+        const client = await createMCPClient!({
           transport: {
             type: server.transport as "http" | "sse",
             url: server.url!,
