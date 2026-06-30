@@ -244,7 +244,7 @@ storage/                              # 附件存储(不对外暴露)
 
 | 模块 | 职责 |
 |------|------|
-| **skill-loader.ts** | 执行时加载绑定的 skills:≤3 个全量注入 SKILL.md 到 system prompt;>3 个注入 name+description 摘要 + 注册 `load_skill` tool(模型按需调用);reference 附件读取文本注入;script 附件注册为可调用 tool |
+| **skill-loader.ts** | 执行时加载绑定的 skills:≤3 个全量注入 SKILL.md 到 system prompt;>3 个注入 name+description 摘要 + 注册 `load_skill` tool(模型按需调用);reference 附件读取文本注入;script 附件第一版作为 reference 文本注入(不自动执行) |
 | **prompt-renderer.ts** | 执行时渲染 prompt 模板:用 `@/lib/expression.ts` 解析 `{{变量}}`,变量值来源优先级:节点配置 > 工作流输入 > 上游节点输出 > defaultValue;按 role 分组注入 system/user |
 | **mcp-manager.ts** | MCP 连接管理器:http/sse 每次执行新建连接;stdio 进程池(首次 spawn,引用计数,空闲 5 分钟 kill,崩溃重启 ≤3 次);按节点绑定选择 tools/resources/prompts |
 | **zip.ts** | JSZip 打包导出 + 解压导入;解压时校验路径不含 `..` 和绝对路径;附件总大小 ≤10MB |
@@ -335,6 +335,7 @@ MCP测试: { status: "online"|"error", capabilities: { tools, resources, prompts
 
 ```typescript
 // ===== 扩展加载阶段(新增) =====
+const nodeConfig = (node.data.config as Record<string, unknown>) || {}
 const extensions = mergeExtensions(context.workflowExtensions, nodeConfig)
 const skillPayload = await loadSkills(extensions.skills, context)
 const promptPayload = renderPrompts(extensions.prompts, context)
@@ -355,9 +356,10 @@ userInput = [
 ].filter(Boolean).join("\n\n")
 
 // 注册 tools
-if (mcpPayload.tools || skillPayload.scriptTools) {
-  genOptions.tools = { ...mcpPayload.tools, ...skillPayload.scriptTools }
-  genOptions.maxSteps = 3
+if (mcpPayload.tools || skillPayload.loadSkillTool) {
+  genOptions.tools = { ...mcpPayload.tools, ...skillPayload.loadSkillTool }
+  // skill 单独加载时 maxSteps=3;skill + MCP 同时存在时 maxSteps=5
+  genOptions.maxSteps = (skillPayload.loadSkillTool && mcpPayload.tools) ? 5 : 3
 }
 ```
 
@@ -365,8 +367,8 @@ if (mcpPayload.tools || skillPayload.scriptTools) {
 
 ```typescript
 interface SkillPayload {
-  systemContext: string[]              // 注入 system prompt 的文本
-  scriptTools: Record<string, Tool>    // script 附件注册为 tools
+  systemContext: string[]                    // 注入 system prompt 的文本
+  loadSkillTool?: Record<string, Tool>      // >3 skills 时注册的 load_skill tool
 }
 ```
 
@@ -506,7 +508,7 @@ sidebar.extensions            → "扩展包" / "Extensions"(侧边栏导航项)
 ### 8.1 数据层
 - [ ] Prisma schema 新增 Skill / Prompt / McpServer 三张表
 - [ ] `prisma migrate dev` 生成迁移
-- [ ] 新增依赖 `@ai-sdk/mcp` + `@modelcontextprotocol/sdk`
+- [ ] 新增依赖 `@ai-sdk/mcp` + `@modelcontextprotocol/sdk` + `jszip`
 
 ### 8.2 API 层
 - [ ] Skills CRUD + upload + export
