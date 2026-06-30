@@ -7,7 +7,8 @@
   "sidebar": {
     "home": "首页",
     "workflows": "工作流",
-    "newWorkflow": "新建工作流"
+    "newWorkflow": "新建工作流",
+    "extensions": "扩展包"
   },
   "home": {
     "welcome": "欢迎使用 My Workflow",
@@ -205,5 +206,98 @@
     "completed": "已完成",
     "failed": "失败",
     "idle": "空闲"
+  },
+  "extensions": {
+    "title": "扩展包管理",
+    "tabs": {
+      "skills": "技能包",
+      "prompts": "提示词",
+      "mcp": "MCP 服务"
+    },
+    "common": {
+      "create": "新建",
+      "upload": "上传",
+      "export": "导出",
+      "delete": "删除",
+      "search": "搜索",
+      "edit": "编辑",
+      "save": "保存",
+      "cancel": "取消",
+      "confirmDelete": "确定要删除吗？此操作不可撤销。",
+      "noData": "暂无数据",
+      "name": "名称",
+      "description": "描述",
+      "category": "分类",
+      "tags": "标签",
+      "addTag": "添加标签",
+      "updated": "更新时间"
+    },
+    "skills": {
+      "namePlaceholder": "技能名称(≤64字符)",
+      "descPlaceholder": "第三人称描述，说明技能做什么及何时使用(≤1024字符)",
+      "descHint": "💡 使用第三人称，如 \"Processes PDF files. Use when working with PDFs.\"",
+      "contentLabel": "SKILL.md 内容",
+      "attachments": "附件",
+      "uploadAttachment": "上传附件",
+      "attachmentType": {
+        "reference": "参考文档",
+        "script": "脚本"
+      },
+      "charCount": "字符数"
+    },
+    "prompts": {
+      "namePlaceholder": "提示词名称",
+      "contentLabel": "模板内容",
+      "contentHint": "使用 {{变量名}} 或 {{$input.field}} 引用变量",
+      "role": "注入位置",
+      "roleSystem": "System Prompt",
+      "roleUser": "User Input",
+      "variables": "变量定义",
+      "varName": "变量名",
+      "varDesc": "描述",
+      "varRequired": "必填",
+      "varDefault": "默认值",
+      "addVariable": "添加变量",
+      "preview": "预览(使用默认值)"
+    },
+    "mcp": {
+      "transport": "传输方式",
+      "transportHttp": "HTTP",
+      "transportSse": "SSE",
+      "transportStdio": "Stdio",
+      "url": "URL",
+      "urlPlaceholder": "https://mcp-server.example.com",
+      "headers": "请求头",
+      "command": "命令",
+      "commandPlaceholder": "npx",
+      "args": "参数",
+      "argsPlaceholder": "[-y, @modelcontextprotocol/server-sqlite]",
+      "env": "环境变量",
+      "testConnection": "测试连接",
+      "testing": "测试中...",
+      "statusOnline": "在线",
+      "statusOffline": "离线",
+      "statusError": "错误",
+      "statusUntested": "未测试",
+      "capabilities": "能力预览",
+      "tools": "工具",
+      "resources": "资源",
+      "promptsLabel": "Prompts",
+      "stdioWarning": "⚠️ Stdio 仅适用于自托管部署，云端建议使用 HTTP/SSE"
+    },
+    "picker": {
+      "title": "扩展包",
+      "addSkill": "添加技能包",
+      "addPrompt": "添加提示词",
+      "addMcp": "添加 MCP",
+      "selectSkills": "选择技能包",
+      "selectPrompts": "选择提示词",
+      "selectMcp": "选择 MCP 服务",
+      "toolsConfig": "工具配置",
+      "allTools": "全部工具",
+      "selectedTools": "指定工具",
+      "resources": "资源",
+      "inherited": "继承工作流默认"
+    }
   }
 }

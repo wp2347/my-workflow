@@ -7,7 +7,8 @@
   "sidebar": {
     "home": "Home",
     "workflows": "Workflows",
-    "newWorkflow": "New Workflow"
+    "newWorkflow": "New Workflow",
+    "extensions": "Extensions"
   },
   "home": {
     "welcome": "Welcome to My Workflow",
@@ -201,5 +202,98 @@
     "completed": "completed",
     "failed": "failed",
     "idle": "idle"
+  },
+  "extensions": {
+    "title": "Extension Management",
+    "tabs": {
+      "skills": "Skills",
+      "prompts": "Prompts",
+      "mcp": "MCP Servers"
+    },
+    "common": {
+      "create": "Create",
+      "upload": "Upload",
+      "export": "Export",
+      "delete": "Delete",
+      "search": "Search",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirmDelete": "Are you sure? This cannot be undone.",
+      "noData": "No data",
+      "name": "Name",
+      "description": "Description",
+      "category": "Category",
+      "tags": "Tags",
+      "addTag": "Add tag",
+      "updated": "Updated"
+    },
+    "skills": {
+      "namePlaceholder": "Skill name (≤64 chars)",
+      "descPlaceholder": "Third-person description of what it does and when to use (≤1024 chars)",
+      "descHint": "💡 Use third person, e.g. \"Processes PDF files. Use when working with PDFs.\"",
+      "contentLabel": "SKILL.md content",
+      "attachments": "Attachments",
+      "uploadAttachment": "Upload attachment",
+      "attachmentType": {
+        "reference": "Reference",
+        "script": "Script"
+      },
+      "charCount": "characters"
+    },
+    "prompts": {
+      "namePlaceholder": "Prompt name",
+      "contentLabel": "Template content",
+      "contentHint": "Use {{variableName}} or {{$input.field}} to reference variables",
+      "role": "Inject to",
+      "roleSystem": "System Prompt",
+      "roleUser": "User Input",
+      "variables": "Variables",
+      "varName": "Name",
+      "varDesc": "Description",
+      "varRequired": "Required",
+      "varDefault": "Default",
+      "addVariable": "Add variable",
+      "preview": "Preview (with defaults)"
+    },
+    "mcp": {
+      "transport": "Transport",
+      "transportHttp": "HTTP",
+      "transportSse": "SSE",
+      "transportStdio": "Stdio",
+      "url": "URL",
+      "urlPlaceholder": "https://mcp-server.example.com",
+      "headers": "Headers",
+      "command": "Command",
+      "commandPlaceholder": "npx",
+      "args": "Arguments",
+      "argsPlaceholder": "[-y, @modelcontextprotocol/server-sqlite]",
+      "env": "Environment",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "statusOnline": "Online",
+      "statusOffline": "Offline",
+      "statusError": "Error",
+      "statusUntested": "Untested",
+      "capabilities": "Capabilities",
+      "tools": "Tools",
+      "resources": "Resources",
+      "promptsLabel": "Prompts",
+      "stdioWarning": "⚠️ Stdio is for self-hosted only. Use HTTP/SSE for cloud."
+    },
+    "picker": {
+      "title": "Extensions",
+      "addSkill": "Add Skill",
+      "addPrompt": "Add Prompt",
+      "addMcp": "Add MCP",
+      "selectSkills": "Select Skills",
+      "selectPrompts": "Select Prompts",
+      "selectMcp": "Select MCP Server",
+      "toolsConfig": "Tools config",
+      "allTools": "All tools",
+      "selectedTools": "Selected tools",
+      "resources": "Resources",
+      "inherited": "Inherited from workflow"
+    }
   }
 }
