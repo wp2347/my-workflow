@@ -194,7 +194,9 @@ function parseFrontmatter(md: string): { name?: string; description?: string; bo
 
 ```
 src/
-├── app/api/extensions/
+├── app/
+│   ├── (dashboard)/extensions/page.tsx   # 扩展包管理主页面路由
+│   └── api/extensions/
 │   ├── skills/
 │   │   ├── route.ts                  # GET 列表 / POST 新建
 │   │   ├── upload/route.ts           # POST 上传导入(.md/.zip)
@@ -322,6 +324,7 @@ MCP测试: { status: "online"|"error", capabilities: { tools, resources, prompts
 3. 更新 capabilitiesCache + status + lastCheckedAt
 4. stdio:测试完即 kill 子进程
 5. 失败 → status="error",返回错误信息
+6. **stdio 在 serverless 环境:** 返回 `{ status: "error", error: "stdio transport requires self-hosted deployment" }`,不尝试 spawn
 
 ---
 
@@ -333,12 +336,23 @@ MCP测试: { status: "online"|"error", capabilities: { tools, resources, prompts
 
 > **注意:** `executeLLMNode` 签名为 `(node, context)`,无 `workflowConfig` 参数。工作流级 extensions 存在 `Workflow.config.extensions` 里。需在 `executor.ts` 的 `executeWorkflow` 入口加载工作流 config 时提取 extensions 存入 `ExecutionContext`(新增 `workflowExtensions` 字段),避免执行时额外 DB 查询。
 
+**`mergeExtensions` 签名:**
+```typescript
+function mergeExtensions(
+  wfExt: ExtensionBindings | undefined,
+  nodeConfig: Record<string, unknown>,
+): ExtensionBindings
+```
+- `wfExt` 为 undefined 时视为空绑定
+- `nodeConfig.extensions` 为 undefined 时视为空绑定
+- 替换语义:节点级某字段非空数组 → 覆盖;为空 → 回退工作流级
+
 ```typescript
 // ===== 扩展加载阶段(新增) =====
 const nodeConfig = (node.data.config as Record<string, unknown>) || {}
 const extensions = mergeExtensions(context.workflowExtensions, nodeConfig)
 const skillPayload = await loadSkills(extensions.skills, context)
-const promptPayload = renderPrompts(extensions.prompts, context)
+const promptPayload = await renderPrompts(extensions.prompts, context)  // DB 查询,async
 const mcpPayload = await loadMcpExtensions(extensions.mcp, context)
 
 // 注入 system prompt
