@@ -159,9 +159,24 @@ export interface ExecutionContext {
 }
 ```
 
-`executor.ts` 的 `executeWorkflow` 在构建 context 时,从 Workflow.config 提取 extensions 存入。
+`executor.ts` 的 `executeWorkflow` 在构建 context 时,需先查 DB 获取 `Workflow.config`,提取 `extensions` 存入 `workflowExtensions` 字段。
 
-### 2.6 新增依赖
+### 2.6 Frontmatter 解析
+
+Skill 上传 `.md`/`.zip` 时需解析 YAML frontmatter(name/description)。使用简单正则解析(避免新增 `gray-matter` 依赖):
+
+```typescript
+function parseFrontmatter(md: string): { name?: string; description?: string; body: string } {
+  const match = md.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
+  if (!match) return { body: md }
+  const yaml = match[1]
+  const name = yaml.match(/^name:\s*(.+)$/m)?.[1]?.trim()
+  const description = yaml.match(/^description:\s*(.+)$/m)?.[1]?.trim()
+  return { name, description, body: match[2] }
+}
+```
+
+### 2.7 新增依赖
 
 ```json
 {
@@ -358,12 +373,12 @@ interface SkillPayload {
 **加载策略:**
 - skillIds 为空 → 返回空 payload
 - 悬空 ID → `console.warn` + 跳过
-- **≤3 个 skill:** 全量注入 content 到 systemContext;reference 附件读取文本追加
+- **≤3 个 skill:** 全量注入 content 到 systemContext;reference 附件读取文本追加;**script 附件第一版作为 reference 文本注入(读取脚本内容作为参考文档),不自动注册为可执行 tool** —— 真正可执行 tool 通过 MCP 实现,更安全且实现简单
 - **>3 个 skill:** 注入所有 name+description 摘要 + 注册 `load_skill` tool:
   - `load_skill({ skill_name: string })` → 返回该 skill 的 content 全文
   - 设 `maxSteps: 3`,模型在生成过程中按需调用,AI SDK 自动处理 tool call 循环
   - 所有主流模型(OpenAI/Claude/Gemini/DeepSeek 等)都支持 tool calling
-- **script 附件:** 注册为可调用 tool
+  - **当同时绑定 MCP tools 时:`maxSteps` 设为 5**(3 给 skill 加载,2 给 MCP tool 调用)
 
 ### 5.3 prompt-renderer.ts
 
@@ -479,7 +494,10 @@ extensions.skills.*           → Skills 管理界面文案
 extensions.prompts.*          → Prompts 管理界面文案
 extensions.mcp.*              → MCP 管理界面文案
 extensions.picker.*           → 节点配置中的扩展选择器文案
+sidebar.extensions            → "扩展包" / "Extensions"(侧边栏导航项)
 ```
+
+> **注意:** 侧边栏(`src/app/(dashboard)/layout.tsx`)新增"扩展包"导航项必须使用 `t("sidebar.extensions")`,不得硬编码中文。
 
 ---
 
@@ -540,3 +558,6 @@ extensions.picker.*           → 节点配置中的扩展选择器文案
 | 悬空引用 | warn + 跳过 | 简单健壮,不做删除时扫描清理 |
 | version 字段 | 仅显示用 | 第一版不做版本历史 |
 | 批量操作 | 不做 | YAGNI,与现有风格一致 |
+| MCP 无 upload/export | 不做 | MCP 是连接配置(非文件),在线编辑或 URL 注册即可,无需导入导出 |
+| script 附件不自动执行 | 第一版作为 reference 文本注入 | 安全 + 实现简单,可执行 tool 由 MCP 承担 |
+| frontmatter 解析 | 正则(非 gray-matter) | 避免新增依赖,skill frontmatter 结构简单 |
