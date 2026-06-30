@@ -8,13 +8,30 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Download, Edit, Trash2 } from "lucide-react"
 
-export function PromptsTab() {
+interface PromptsTabProps {
+  onEdit?: (id: string) => void
+  onRefresh?: () => void
+}
+
+export function PromptsTab({ onEdit, onRefresh }: PromptsTabProps) {
   const { t } = useTranslation()
   const { prompts, loading, fetchPrompts } = useExtensionsStore()
 
   useEffect(() => {
     fetchPrompts()
   }, [fetchPrompts])
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(t("extensions.common.confirmDelete") + ` (${name})`)) return
+    try {
+      const res = await fetch(`/api/extensions/prompts/${id}`, { method: "DELETE" })
+      if (res.ok) {
+        onRefresh?.()
+      }
+    } catch (error) {
+      console.error("Failed to delete:", error)
+    }
+  }
 
   if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>
   if (prompts.length === 0) return <div className="text-muted-foreground text-sm">{t("extensions.common.noData")}</div>
@@ -26,13 +43,17 @@ export function PromptsTab() {
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-sm truncate">{prompt.name}</h3>
             <div className="flex gap-1">
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <Download className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
+              {onEdit && (
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onEdit(prompt.id)}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <a href={`/api/extensions/prompts/${prompt.id}/export`}>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <Download className="h-3.5 w-3.5" />
+                </Button>
+              </a>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(prompt.id, prompt.name)}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>

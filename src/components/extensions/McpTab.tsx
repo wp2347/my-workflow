@@ -8,13 +8,30 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Edit, Trash2, Circle } from "lucide-react"
 
-export function McpTab() {
+interface McpTabProps {
+  onEdit?: (id: string) => void
+  onRefresh?: () => void
+}
+
+export function McpTab({ onEdit, onRefresh }: McpTabProps) {
   const { t } = useTranslation()
   const { mcpServers, loading, fetchMcpServers } = useExtensionsStore()
 
   useEffect(() => {
     fetchMcpServers()
   }, [fetchMcpServers])
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(t("extensions.common.confirmDelete") + ` (${name})`)) return
+    try {
+      const res = await fetch(`/api/extensions/mcp/${id}`, { method: "DELETE" })
+      if (res.ok) {
+        onRefresh?.()
+      }
+    } catch (error) {
+      console.error("Failed to delete:", error)
+    }
+  }
 
   if (loading) return <div className="text-muted-foreground text-sm">Loading...</div>
   if (mcpServers.length === 0) return <div className="text-muted-foreground text-sm">{t("extensions.common.noData")}</div>
@@ -47,10 +64,12 @@ export function McpTab() {
               </div>
             </div>
             <div className="flex gap-1">
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive">
+              {onEdit && (
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onEdit(server.id)}>
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive" onClick={() => handleDelete(server.id, server.name)}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>

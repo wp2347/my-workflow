@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useWorkflowStore } from "@/stores/workflow"
-import type { WorkflowNode } from "@/types/workflow"
+import type { WorkflowNode, ExtensionBindings } from "@/types/workflow"
 import { PROVIDERS } from "@/lib/providers"
 import { useTranslation } from "@/i18n"
 import { Input } from "@/components/ui/input"
@@ -13,7 +13,8 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, ExternalLink, Eye, EyeOff } from "lucide-react"
+import { Trash2, ExternalLink, Eye, EyeOff, Package } from "lucide-react"
+import { ExtensionPicker } from "@/components/extensions/ExtensionPicker"
 
 interface NodeConfigPanelProps { node: WorkflowNode }
 
@@ -197,6 +198,20 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
             <Label htmlFor="llm-enable-tools" className="text-xs text-muted-foreground">{t("config.functionCalling")}</Label>
             <Switch id="llm-enable-tools" checked={(config.enableTools as boolean) || false} onCheckedChange={(v) => updateConfig("enableTools", v)} />
           </div>
+
+          {/* 扩展包折叠区 */}
+          <details className="pt-2 border-t">
+            <summary className="cursor-pointer text-xs font-semibold text-muted-foreground hover:text-foreground py-2 flex items-center gap-1.5">
+              <Package className="h-3.5 w-3.5" />
+              {t("extensions.picker.title")}
+            </summary>
+            <div className="pt-2">
+              <ExtensionPicker
+                value={(config.extensions as ExtensionBindings) || { skills: [], prompts: [], mcp: [] }}
+                onChange={(ext) => updateConfig("extensions", ext)}
+              />
+            </div>
+          </details>
         </div>
       )}
 
