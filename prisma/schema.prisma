@@ -1,3 +1,8 @@
+// ============================================================
+// Prisma Schema — My Workflow
+// 数据库: PostgreSQL + pgvector 扩展
+// ============================================================
+
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -8,16 +13,19 @@ datasource db {
   extensions = [pgvector(map: "vector", schema: "public")]
 }
 
+// ============================================================
+// 工作流 — 核心模型
+// ============================================================
 model Workflow {
   id           String    @id @default(cuid())
   name         String
   description  String?
   config       Json      @default("{}")
   enabled      Boolean   @default(true) @map("enabled")
-  schedule     String?   @map("schedule")
+  schedule     String?   @map("schedule")         // 旧版 HH:MM 定时格式
   webhookId    String?   @unique @map("webhook_id")
   webhookSecret String?  @map("webhook_secret")
-  notifyChatId String?   @map("notify_chat_id")
+  notifyChatId String?   @map("notify_chat_id")    // 飞书通知目标 chatId
   lastRunAt    DateTime? @map("last_run_at")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
@@ -30,13 +38,14 @@ model Workflow {
   @@map("workflows")
 }
 
+// 工作流节点
 model WorkflowNode {
   id         String   @id @default(cuid())
   workflowId String   @map("workflow_id")
-  type       String
-  positionX  Float    @default(0) @map("position_x")
-  positionY  Float    @default(0) @map("position_y")
-  data       Json     @default("{}")
+  type       String                                  // 节点类型: input/llm/output/feishu/http/condition/merge/cron_trigger
+  positionX  Float    @default(0) @map("position_x") // 画布 X 坐标
+  positionY  Float    @default(0) @map("position_y") // 画布 Y 坐标
+  data       Json     @default("{}")                 // 节点配置 JSON
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
@@ -45,12 +54,13 @@ model WorkflowNode {
   @@map("workflow_nodes")
 }
 
+// 工作流边（连线）
 model WorkflowEdge {
   id           String  @id @default(cuid())
   workflowId   String  @map("workflow_id")
-  source       String
-  target       String
-  sourceHandle String? @map("source_handle")
+  source       String                                 // 源节点 ID
+  target       String                                 // 目标节点 ID
+  sourceHandle String? @map("source_handle")          // 源连接点（用于条件分支）
   targetHandle String? @map("target_handle")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -60,13 +70,16 @@ model WorkflowEdge {
   @@map("workflow_edges")
 }
 
+// ============================================================
+// 执行记录
+// ============================================================
 model Execution {
   id         String    @id @default(cuid())
   workflowId String    @map("workflow_id")
-  status     String    @default("pending")
+  status     String    @default("pending")             // pending/running/completed/failed
   input      Json      @default("{}")
   output     Json?
-  logs       Json      @default("[]")
+  logs       Json      @default("[]")                  // 节点级执行日志
   error      String?
   startedAt  DateTime? @map("started_at")
   finishedAt DateTime? @map("finished_at")
@@ -78,12 +91,15 @@ model Execution {
   @@map("executions")
 }
 
+// ============================================================
+// 凭据管理
+// ============================================================
 model Credential {
   id        String   @id @default(cuid())
   name      String
-  type      String   @default("api_key")
+  type      String   @default("api_key")               // api_key / oauth2 / custom
   value     String
-  scope     String   @default("global")
+  scope     String   @default("global")                // global / workflow
   workflowId String? @map("workflow_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -91,6 +107,9 @@ model Credential {
   @@map("credentials")
 }
 
+// ============================================================
+// 知识库文档（RAG 用）
+// ============================================================
 model Document {
   id        String   @id @default(cuid())
   name      String
@@ -110,7 +129,7 @@ model DocumentChunk {
   documentId String   @map("document_id")
   content    String   @db.Text
   chunkIndex Int      @map("chunk_index")
-  embedding  Unsupported("vector(1536)")?
+  embedding  Unsupported("vector(1536)")?              // pgvector 向量
   metadata   Json     @default("{}")
   createdAt  DateTime @default(now()) @map("created_at")
 
@@ -119,21 +138,81 @@ model DocumentChunk {
   @@map("document_chunks")
 }
 
+// ============================================================
+// Cron 定时任务（cron 表达式格式）
+// 由 BullMQ Worker 驱动，轮询调度器仅处理旧版 HH:MM 格式
+// ============================================================
 model WorkflowCronJob {
   id         String    @id @default(cuid())
   workflowId String    @map("workflow_id")
-  name       String
-  cronExpr   String    @map("cron_expr")
-  timezone   String    @default("Asia/Shanghai")
-  enabled    Boolean   @default(true) @map("enabled")
-  input      Json      @default("{}")
-  lastRunAt  DateTime? @map("last_run_at")
-  nextRunAt  DateTime? @map("next_run_at")
+  name       String                                         // 任务显示名称
+  cronExpr   String    @map("cron_expr")                    // cron 表达式，如 "30 8 * * *"
+  timezone   String    @default("Asia/Shanghai")            // 时区
+  enabled    Boolean   @default(true) @map("enabled")       // 是否启用
+  input      Json      @default("{}")                       // 触发时传入的 input payload
+  lastRunAt  DateTime? @map("last_run_at")                  // 上次执行时间
+  nextRunAt  DateTime? @map("next_run_at")                  // 预计下次执行时间（仅显示用）
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
   workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
-  @@unique([workflowId, name])
+  @@unique([workflowId, name])                               // 同一工作流下任务名唯一
   @@map("workflow_cron_jobs")
+}
+
+// ============================================================
+// 扩展包系统 — Skills / Prompts / MCP Servers
+// ============================================================
+
+model Skill {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  category    String?
+  content     String   @db.Text
+  attachments Json     @default("[]")
+  tags        String[] @default([])
+  version     String   @default("1.0.0")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("skills")
+}
+
+model Prompt {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  content     String   @db.Text
+  variables   Json     @default("[]")
+  role        String   @default("system")
+  tags        String[] @default([])
+  version     String   @default("1.0.0")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("prompts")
+}
+
+model McpServer {
+  id                String    @id @default(cuid())
+  name              String
+  description       String?
+  transport         String
+  url               String?
+  headers           Json      @default("{}")
+  command           String?
+  args              Json      @default("[]")
+  env               Json      @default("{}")
+  capabilitiesCache Json      @default("{\"tools\":[],\"resources\":[],\"prompts\":[]}")
+  status            String    @default("untested")
+  lastCheckedAt     DateTime? @map("last_checked_at")
+  tags              String[]  @default([])
+  version           String    @default("1.0.0")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("mcp_servers")
 }
