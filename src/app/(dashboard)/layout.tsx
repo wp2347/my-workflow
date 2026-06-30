@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { LocaleSwitcher } from "@/components/LocaleSwitcher"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/i18n"
-import { Workflow, Plus, Home, Activity, Shield, Database } from "lucide-react"
+import { Workflow, Plus, Home, Activity, Shield, Database, Package } from "lucide-react"
 
 export default function DashboardLayout({
   children,
@@ -89,6 +89,14 @@ export default function DashboardLayout({
             className={cn(buttonVariants({ variant: pathname === "/knowledge" ? "secondary" : "ghost", size: "sm" }), "w-full justify-start")}
           >
             <Database className="h-4 w-4 mr-2" />知识库
+          </Link>
+
+          <Link
+            href="/extensions"
+            className={cn(buttonVariants({ variant: pathname === "/extensions" ? "secondary" : "ghost", size: "sm" }), "w-full justify-start")}
+          >
+            <Package className="h-4 w-4 mr-2" />
+            {t("sidebar.extensions")}
           </Link>
 
           <Separator className="my-2" />
