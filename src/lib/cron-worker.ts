@@ -27,7 +27,7 @@ export async function registerCronJob(
   input: Record<string, unknown>,
 ) {
   const q = getQueue()
-  await q.add(jobId, { workflowId, input }, {
+  await q.add(jobId, { workflowId, input, cronJobId: jobId }, {
     repeat: { pattern: cronExpr, tz: timezone },
     jobId,
   })
@@ -58,7 +58,7 @@ export function startCronWorker() {
   worker = new Worker(
     QUEUE_NAME,
     async (job: Job) => {
-      const { workflowId, input } = job.data
+      const { workflowId, input, cronJobId } = job.data
       console.log(`[CronWorker] Processing: ${job.id} for workflow ${workflowId}`)
 
       try {
@@ -98,11 +98,13 @@ export function startCronWorker() {
           },
         })
 
-        // Update lastRunAt
-        await prisma.workflowCronJob.update({
-          where: { id: job.id as string },
-          data: { lastRunAt: new Date() },
-        })
+        // Update lastRunAt (use cronJobId from job data, not BullMQ's job.id)
+        if (cronJobId) {
+          await prisma.workflowCronJob.update({
+            where: { id: cronJobId },
+            data: { lastRunAt: new Date() },
+          }).catch(() => {})
+        }
 
         console.log(`[CronWorker] ${workflow.name}: ${result.status}`)
       } catch (err) {
