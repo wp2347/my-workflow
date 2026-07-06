@@ -38,17 +38,18 @@ function getPreviousOutputs(_node: WorkflowNode, context: ExecutionContext): str
 /** 根据 provider 创建对应的 AI SDK LanguageModel */
 function createModel(provider: string, modelId: string, apiKey: string, baseUrl: string): LanguageModel {
   const key = apiKey || ""
+  const createOpenAIProvider = (url: string) => createOpenAI({ apiKey: key, baseURL: url })
   switch (provider) {
-    case "openai": return createOpenAI({ apiKey: key, baseURL: baseUrl })(modelId)
+    case "openai": return createOpenAIProvider(baseUrl || "https://api.openai.com/v1").chat(modelId)
     case "anthropic": return createAnthropic({ apiKey: key, baseURL: baseUrl })(modelId)
     case "google": return createGoogleGenerativeAI({ apiKey: key, baseURL: baseUrl })(modelId)
-    case "deepseek": return createDeepSeek({ apiKey: key, baseURL: baseUrl })(modelId)
+    case "deepseek": return createOpenAIProvider(baseUrl || "https://api.deepseek.com/v1").chat(modelId)
     case "groq": return createGroq({ apiKey: key, baseURL: baseUrl })(modelId)
     case "mistral": return createMistral({ apiKey: key, baseURL: baseUrl })(modelId)
     case "xai": return createXai({ apiKey: key, baseURL: baseUrl })(modelId)
     case "cohere":
     case "openai-compatible":
-    default: return createOpenAI({ apiKey: key, baseURL: baseUrl })(modelId)
+    default: return createOpenAIProvider(baseUrl).chat(modelId)
   }
 }
 
