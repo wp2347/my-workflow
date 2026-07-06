@@ -57,7 +57,7 @@ export async function loadSkills(
   const loadSkillTool = {
     load_skill: tool({
       description: "Load the full content of a skill by name. Call this when you need detailed instructions from a skill.",
-      parameters: z.object({
+      inputSchema: z.object({
         skill_name: z.string().describe("The name of the skill to load"),
       }),
       execute: async ({ skill_name }: { skill_name: string }) => {

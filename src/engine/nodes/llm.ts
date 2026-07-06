@@ -155,7 +155,7 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   const weatherTool = {
     get_weather: tool({
       description: "获取指定城市实时天气",
-      parameters: z.object({ city: z.string().describe("城市英文名如Beijing") }),
+      inputSchema: z.object({ city: z.string().describe("城市英文名如Beijing") }),
       execute: async (args: { city: string }) => {
         const res = await fetch(`https://wttr.in/${encodeURIComponent(args.city)}?format=j1`)
         const data = await res.json() as Record<string, unknown>
@@ -195,9 +195,15 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
 
   const result = await generateText(genOptions as never)
   const ru = result as unknown as Record<string, unknown>
-  const steps = ru.steps as Array<Record<string, unknown>> | undefined
-  const content = steps?.[0]?.content as Array<{ type: string; text: string }> | undefined
-  const outputText = content?.filter((c) => c.type === "text").map((c) => c.text).join("").trim() || ""
+  // v6: 优先用 result.text,其次从 steps 提取
+  const outputText = (ru.text as string) || (() => {
+    const steps = ru.steps as Array<Record<string, unknown>> | undefined
+    const text = steps?.map((s) => {
+      const content = s.content as Array<{ type: string; text: string }> | undefined
+      return content?.filter((c) => c.type === "text").map((c) => c.text).join("") || ""
+    }).join("").trim() || ""
+    return text
+  })() || ""
 
   // 将助手回复加入对话历史
   if (memory > 0 && outputText) {
