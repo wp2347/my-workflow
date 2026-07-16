@@ -1,4 +1,4 @@
-import { generateText, tool, type LanguageModel } from "ai"
+import { generateText, tool, stepCountIs, type LanguageModel } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
@@ -190,20 +190,35 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   // 工具调用
   if (enableTools) {
     genOptions.tools = { ...weatherTool, ...(genOptions.tools || {}) }
-    genOptions.maxSteps = Math.max(genOptions.maxSteps as number || 0, 3)
+    genOptions.maxSteps = Math.max(genOptions.maxSteps as number || 0, 5)
+  }
+
+  // 有 tools 时用 stopWhen 确保多步执行(工具调用后自动续轮生成最终回复)
+  if (genOptions.tools) {
+    genOptions.stopWhen = stepCountIs(genOptions.maxSteps as number || 5)
   }
 
   const result = await generateText(genOptions as never)
   const ru = result as unknown as Record<string, unknown>
-  // v6: 优先用 result.text,其次从 steps 提取
-  const outputText = (ru.text as string) || (() => {
+
+  // 有 tools 时 result.text 应该已包含最终回复(多步执行后)
+  const toolResults = ru.toolResults as Array<Record<string, unknown>> | undefined
+  let outputText = (ru.text as string) || ""
+
+  // fallback: 如果 result.text 为空,从 steps 提取
+  if (!outputText) {
     const steps = ru.steps as Array<Record<string, unknown>> | undefined
-    const text = steps?.map((s) => {
+    outputText = steps?.map((s) => {
       const content = s.content as Array<{ type: string; text: string }> | undefined
       return content?.filter((c) => c.type === "text").map((c) => c.text).join("") || ""
     }).join("").trim() || ""
-    return text
-  })() || ""
+  }
+
+  // 最后兜底: 如果有 toolResults 但文本还是很短,用 tool 数据拼
+  if (toolResults && toolResults.length > 0 && (!outputText || outputText.length < 20)) {
+    const toolData = toolResults.map((tr) => JSON.stringify(tr.output)).join("\n")
+    outputText = `工具返回数据:\n${toolData}`
+  }
 
   // 将助手回复加入对话历史
   if (memory > 0 && outputText) {
