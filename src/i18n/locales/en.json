@@ -33,7 +33,9 @@
     "delete": "Delete",
     "deleteTitle": "Delete Workflow",
     "deleteDesc": "Are you sure you want to delete \"{name}\"? This action cannot be undone. All nodes, edges, and execution history will be permanently removed.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "musicTemplate": "Music Generation Template",
+    "musicTemplateDesc": "Generate music from a prompt and export it"
   },
   "canvas": {
     "nodes": "Nodes",
@@ -49,6 +51,8 @@
     "httpDesc": "Call external API endpoints",
     "condition": "Condition",
     "conditionDesc": "IF/ELSE branch logic",
+    "music": "Music Generation",
+    "musicDesc": "Call music generation API to produce audio",
     "dragTips": {
       "drag": "Drag nodes to canvas",
       "connect": "Connect nodes together",
@@ -186,7 +190,54 @@
     "httpMethod": "Method",
     "httpUrl": "URL",
     "httpBody": "Body",
-    "httpBodyHint": "Use {{variable}} to reference upstream node output"
+    "httpBodyHint": "Use {{variable}} to reference upstream node output",
+    "musicApiUrl": "API URL",
+    "musicMethod": "Method",
+    "musicHeaders": "Headers",
+    "musicBody": "Body Template",
+    "musicBodyHint": "Placeholders: {{ $input.prompt }}, {{ $input.style }}, {{ $input.duration }}, or {{ nodeId.field }} to reference upstream nodes",
+    "musicAuth": "Authentication",
+    "musicPolling": "Async Polling",
+    "musicPollingHint": "Music generation is usually async; enable to poll by task_id until done",
+    "musicTaskIdField": "Task ID Field Path",
+    "musicPollUrl": "Poll URL Template",
+    "musicPollUrlHint": "e.g. https://api.xxx.com/tasks/{{taskId}}",
+    "musicPollInterval": "Poll Interval (ms)",
+    "musicPollMaxAttempts": "Max Poll Attempts",
+    "musicPollStatusField": "Status Field Path (optional)",
+    "musicPollSuccessValue": "Success Status Value (optional)",
+    "musicResultExtract": "Result Extraction",
+    "musicAudioUrlField": "Audio URL Field Path",
+    "musicMetadataField": "Metadata Field Path (optional)",
+    "exportSettings": "Export Settings",
+    "exportMode": "Export Mode",
+    "exportDownload": "Download to local",
+    "exportLocal": "Save to server directory",
+    "exportRemote": "Upload to remote URL",
+    "exportPath": "Export Directory",
+    "exportPathHint": "Relative to project root, default storage/exports/",
+    "remoteUrl": "Remote Upload URL"
+  },
+  "audioResult": {
+    "preview": "Preview",
+    "download": "Download",
+    "clear": "Clear",
+    "clearing": "Clearing…",
+    "cleared": "Cleared",
+    "noMetadata": "No metadata",
+    "title": "Title",
+    "duration": "Duration",
+    "style": "Style",
+    "clearFailed": "Clear failed, please retry"
+  },
+  "templates": {
+    "music": {
+      "name": "Music Generation Template",
+      "description": "Generate music from a prompt and export it",
+      "labelInput": "Prompt",
+      "labelMusic": "Music Generation",
+      "labelOutput": "Export"
+    }
   },
   "chat": {
     "title": "Test Chat",

@@ -33,7 +33,9 @@
     "delete": "删除",
     "deleteTitle": "删除工作流",
     "deleteDesc": "确定要删除 \"{name}\" 吗？此操作不可撤销，所有节点、连线及执行历史将被永久删除。",
-    "cancel": "取消"
+    "cancel": "取消",
+    "musicTemplate": "音乐生成模板",
+    "musicTemplateDesc": "输入提示词自动生成音乐并导出"
   },
   "canvas": {
     "nodes": "节点列表",
@@ -53,6 +55,8 @@
     "mergeDesc": "合并多个分支结果",
     "cronTrigger": "定时触发器",
     "cronTriggerDesc": "Cron 表达式定时执行工作流",
+    "music": "音乐生成",
+    "musicDesc": "调用音乐生成 API 生成音频",
     "dragTips": {
       "drag": "拖拽节点到画布",
       "connect": "连接节点",
@@ -190,7 +194,54 @@
     "httpMethod": "方法",
     "httpUrl": "URL",
     "httpBody": "请求体",
-    "httpBodyHint": "支持 {{变量}} 引用上游节点输出"
+    "httpBodyHint": "支持 {{变量}} 引用上游节点输出",
+    "musicApiUrl": "API 地址",
+    "musicMethod": "请求方法",
+    "musicHeaders": "请求头",
+    "musicBody": "请求体模板",
+    "musicBodyHint": "可用占位符：{{ $input.prompt }}、{{ $input.style }}、{{ $input.duration }}，或 {{ nodeId.field }} 引用上游节点",
+    "musicAuth": "认证方式",
+    "musicPolling": "异步轮询",
+    "musicPollingHint": "音乐生成通常为异步任务，开启后按 task_id 轮询直到完成",
+    "musicTaskIdField": "任务 ID 字段路径",
+    "musicPollUrl": "轮询 URL 模板",
+    "musicPollUrlHint": "例如 https://api.xxx.com/tasks/{{taskId}}",
+    "musicPollInterval": "轮询间隔(ms)",
+    "musicPollMaxAttempts": "最大轮询次数",
+    "musicPollStatusField": "状态字段路径(可选)",
+    "musicPollSuccessValue": "完成状态值(可选)",
+    "musicResultExtract": "结果提取",
+    "musicAudioUrlField": "音频 URL 字段路径",
+    "musicMetadataField": "元信息字段路径(可选)",
+    "exportSettings": "导出设置",
+    "exportMode": "导出模式",
+    "exportDownload": "下载到本地",
+    "exportLocal": "保存到服务器目录",
+    "exportRemote": "上传到远程 URL",
+    "exportPath": "导出目录",
+    "exportPathHint": "相对于项目根目录，默认 storage/exports/",
+    "remoteUrl": "远程上传 URL"
+  },
+  "audioResult": {
+    "preview": "预览",
+    "download": "下载",
+    "clear": "清空",
+    "clearing": "清除中…",
+    "cleared": "已清空",
+    "noMetadata": "无元信息",
+    "title": "标题",
+    "duration": "时长",
+    "style": "风格",
+    "clearFailed": "清空失败，请重试"
+  },
+  "templates": {
+    "music": {
+      "name": "音乐生成模板",
+      "description": "输入提示词自动生成音乐并导出",
+      "labelInput": "提示词",
+      "labelMusic": "音乐生成",
+      "labelOutput": "导出"
+    }
   },
   "chat": {
     "title": "调试聊天",
