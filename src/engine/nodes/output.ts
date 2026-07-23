@@ -1,4 +1,34 @@
+import { promises as fs, existsSync } from "fs"
+import path from "path"
 import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
+
+function exportBaseDir(): string {
+  return process.env.EXPORT_STORAGE_DIR || path.join(process.cwd(), "storage", "exports")
+}
+
+interface MusicResult {
+  audioUrl: string
+  localPath: string
+  fileName: string
+  metadata: Record<string, unknown>
+}
+
+function findUpstreamMusic(context: ExecutionContext): MusicResult | null {
+  for (const [, output] of context.nodeResults) {
+    if (output && typeof output === "object" && "audioUrl" in (output as Record<string, unknown>)) {
+      const r = output as Record<string, unknown>
+      if (typeof r.audioUrl === "string" && typeof r.localPath === "string") {
+        return {
+          audioUrl: r.audioUrl,
+          localPath: r.localPath,
+          fileName: (r.fileName as string) || path.basename(r.localPath),
+          metadata: (r.metadata as Record<string, unknown>) || {},
+        }
+      }
+    }
+  }
+  return null
+}
 
 export const executeOutputNode: NodeExecutor = async (node, context) => {
   const config = (node.data.config as Record<string, unknown>) || {}
@@ -47,6 +77,33 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
       }
     }
     output = formatted
+  }
+
+  const music = findUpstreamMusic(context)
+  const exportMode = (config.exportMode as string) || "download"
+
+  if (music) {
+    if (exportMode === "local") {
+      const dir = (config.exportPath as string) || exportBaseDir()
+      if (!existsSync(dir)) await fs.mkdir(dir, { recursive: true })
+      await fs.copyFile(music.localPath, path.join(dir, music.fileName))
+    } else if (exportMode === "remote") {
+      const remoteUrl = (config.remoteUrl as string) || ""
+      if (!remoteUrl) throw new Error("Export mode is remote but remoteUrl is empty")
+      const fileBuf = await fs.readFile(music.localPath)
+      const form = new FormData()
+      form.append("file", new Blob([fileBuf]), music.fileName)
+      const res = await fetch(remoteUrl, { method: "POST", body: form })
+      if (!res.ok) throw new Error(`Remote upload failed: ${res.status}`)
+    }
+    return {
+      output,
+      raw: typeof output === "string" ? output : JSON.stringify(output),
+      format,
+      audioUrl: music.audioUrl,
+      fileName: music.fileName,
+      metadata: music.metadata,
+    }
   }
 
   return {
