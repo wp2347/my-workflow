@@ -76,4 +76,25 @@ describe("executeOutputNode", () => {
     expect(res.audioUrl).toBeUndefined()
     expect(res.output).toBeDefined()
   })
+
+  it("local 模式：源文件缺失抛出 ENOENT", async () => {
+    await expect(
+      executeOutputNode(makeNode({ format: "text", template: "", exportMode: "local", exportPath: tmpDir, remoteUrl: "" }), makeCtxWithMusic())
+    ).rejects.toThrow(/ENOENT|no such file/i)
+  })
+
+  it("remote 模式：服务端返回 !ok 抛出含状态码错误", async () => {
+    await fs.writeFile(path.join(tmpDir, "src.mp3"), Buffer.from([1, 2, 3]))
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 502 } as unknown as Response)
+    await expect(
+      executeOutputNode(makeNode({ format: "text", template: "", exportMode: "remote", exportPath: "", remoteUrl: "https://upload.example.com" }), makeCtxWithMusic())
+    ).rejects.toThrow(/Remote upload failed: 502/)
+  })
+
+  it("remote 模式：remoteUrl 为空抛出错误", async () => {
+    await fs.writeFile(path.join(tmpDir, "src.mp3"), Buffer.from([1, 2, 3]))
+    await expect(
+      executeOutputNode(makeNode({ format: "text", template: "", exportMode: "remote", exportPath: "", remoteUrl: "" }), makeCtxWithMusic())
+    ).rejects.toThrow(/remoteUrl is empty/i)
+  })
 })

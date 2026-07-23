@@ -1,4 +1,4 @@
-import { promises as fs, existsSync } from "fs"
+import { promises as fs } from "fs"
 import path from "path"
 import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
 
@@ -13,6 +13,13 @@ interface MusicResult {
   metadata: Record<string, unknown>
 }
 
+/**
+ * Scans all nodeResults for a music-shaped result. Like the existing raw
+ * aggregation, this does NOT resolve actual graph predecessors (executor
+ * context has no edge info) — it picks the first music result in execution
+ * order. In branching workflows with multiple music nodes this may pick a
+ * non-predecessor; acceptable given the existing executor design.
+ */
 function findUpstreamMusic(context: ExecutionContext): MusicResult | null {
   for (const [, output] of context.nodeResults) {
     if (output && typeof output === "object" && "audioUrl" in (output as Record<string, unknown>)) {
@@ -85,14 +92,14 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
   if (music) {
     if (exportMode === "local") {
       const dir = (config.exportPath as string) || exportBaseDir()
-      if (!existsSync(dir)) await fs.mkdir(dir, { recursive: true })
+      await fs.mkdir(dir, { recursive: true })
       await fs.copyFile(music.localPath, path.join(dir, music.fileName))
     } else if (exportMode === "remote") {
       const remoteUrl = (config.remoteUrl as string) || ""
       if (!remoteUrl) throw new Error("Export mode is remote but remoteUrl is empty")
       const fileBuf = await fs.readFile(music.localPath)
       const form = new FormData()
-      form.append("file", new Blob([fileBuf]), music.fileName)
+      form.append("file", new Blob([fileBuf], { type: "audio/mpeg" }), music.fileName)
       const res = await fetch(remoteUrl, { method: "POST", body: form })
       if (!res.ok) throw new Error(`Remote upload failed: ${res.status}`)
     }
