@@ -13,7 +13,10 @@ function inferExt(contentType: string | null, url: string): string {
   if (ct.includes("mpeg") || ct.includes("mp3")) return "mp3"
   if (ct.includes("wav")) return "wav"
   if (ct.includes("ogg")) return "ogg"
-  const m = url.match(/\.(mp3|wav|ogg)(\?|$)/i)
+  if (ct.includes("mp4") || ct.includes("m4a")) return "m4a"
+  if (ct.includes("flac")) return "flac"
+  if (ct.includes("aac")) return "aac"
+  const m = url.match(/\.(mp3|wav|ogg|m4a|flac|aac)(\?|$)/i)
   if (m) return m[1].toLowerCase()
   return "mp3"
 }
@@ -32,13 +35,14 @@ export const executeMusicNode: NodeExecutor = async (node, context) => {
 
   const body = method !== "GET" ? resolveExpression((config.bodyTemplate as string) || "", context) : ""
 
-  if (auth === "bearer" && authToken) headers["Authorization"] = `Bearer ${authToken}`
-  else if (auth === "api_key" && authToken) headers["X-API-Key"] = authToken
+  if (auth === "bearer" && authToken) headers["Authorization"] = `Bearer ${resolveExpression(authToken, context)}`
+  else if (auth === "api_key" && authToken) headers["X-API-Key"] = resolveExpression(authToken, context)
 
   const init: RequestInit = { method, headers }
   if (method !== "GET" && body) init.body = body
 
   const firstRes = await fetch(url, init)
+  if (!firstRes.ok) throw new Error(`Music API request failed: ${firstRes.status}`)
   const firstText = await firstRes.text()
   let firstJson: unknown
   try { firstJson = JSON.parse(firstText) } catch { firstJson = { raw: firstText } }
@@ -62,6 +66,7 @@ export const executeMusicNode: NodeExecutor = async (node, context) => {
     for (let i = 0; i < pollMaxAttempts; i++) {
       await sleep(pollIntervalMs)
       const r = await fetch(pollUrl, { method: "GET", headers })
+      if (!r.ok) throw new Error(`Music polling request failed: ${r.status}`)
       const t = await r.text()
       try { finalResp = JSON.parse(t) } catch { finalResp = { raw: t } }
       if (pollStatusField && pollSuccessValue) {
@@ -74,8 +79,9 @@ export const executeMusicNode: NodeExecutor = async (node, context) => {
   }
 
   const remoteAudioUrl = String(getByPath(finalResp, audioUrlField) ?? "")
-  if (!remoteAudioUrl) throw new Error(`Audio URL not found at path: ${audioUrlField}`)
-  const metadata = metadataField ? (getByPath(finalResp, metadataField) as Record<string, unknown>) ?? {} : {}
+  if (!remoteAudioUrl) throw new Error(`Audio URL not found at path "${audioUrlField}" in response`)
+  const metaVal = metadataField ? getByPath(finalResp, metadataField) : undefined
+  const metadata = (metaVal && typeof metaVal === "object") ? metaVal as Record<string, unknown> : {}
 
   const audioRes = await fetch(remoteAudioUrl)
   if (!audioRes.ok) throw new Error(`Failed to download audio: ${audioRes.status}`)
@@ -95,6 +101,6 @@ export const executeMusicNode: NodeExecutor = async (node, context) => {
     localPath,
     fileName,
     metadata,
-    raw: JSON.stringify({ audioUrl, metadata }),
+    raw: JSON.stringify(finalResp),
   }
 }

@@ -67,6 +67,7 @@ describe("executeMusicNode", () => {
     const files = await fs.readdir(tmpDir)
     expect(files).toContain("exec-1_music-1.mp3")
     expect(typeof res.raw).toBe("string")
+    expect(JSON.parse(res.raw as string)).toMatchObject({ data: { audio_url: "https://cdn.example.com/x.mp3" } })
   })
 
   it("异步轮询：按 taskId 轮询直到 audio_url 出现", async () => {
@@ -132,5 +133,68 @@ describe("executeMusicNode", () => {
     await executeMusicNode(node, makeCtx())
     const opts = fetchMock.mock.calls[0][1] as RequestInit
     expect((opts.headers as Record<string, string>)["Authorization"]).toBe("Bearer secret")
+  })
+
+  it("API 失败抛出包含状态码", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false, status: 500, text: async () => "err",
+    } as unknown as Response)
+    const node = makeNode({
+      apiUrl: "https://api.example.com/generate", method: "POST", headers: {},
+      bodyTemplate: "{}", auth: "none", authToken: "",
+      pollingEnabled: false, audioUrlField: "data.audio_url", metadataField: "",
+    })
+    await expect(executeMusicNode(node, makeCtx())).rejects.toThrow(/Music API request failed: 500/)
+  })
+
+  it("响应缺少 audio_url 抛错", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true, text: async () => JSON.stringify({ data: {} }),
+    } as unknown as Response)
+    const node = makeNode({
+      apiUrl: "https://api.example.com/generate", method: "POST", headers: {},
+      bodyTemplate: "{}", auth: "none", authToken: "",
+      pollingEnabled: false, audioUrlField: "data.audio_url", metadataField: "",
+    })
+    await expect(executeMusicNode(node, makeCtx())).rejects.toThrow(/Audio URL not found/)
+  })
+
+  it("api_key 认证注入 X-API-Key 头", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: { audio_url: "https://cdn.example.com/z.mp3" } }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true, headers: new Headers({ "content-type": "audio/mpeg" }),
+        arrayBuffer: async () => new ArrayBuffer(4),
+      } as unknown as Response)
+    const node = makeNode({
+      apiUrl: "https://api.example.com/generate", method: "POST", headers: {},
+      bodyTemplate: "{}", auth: "api_key", authToken: "key123",
+      pollingEnabled: false, audioUrlField: "data.audio_url", metadataField: "",
+    })
+    await executeMusicNode(node, makeCtx())
+    const opts = fetchMock.mock.calls[0][1] as RequestInit
+    expect((opts.headers as Record<string, string>)["X-API-Key"]).toBe("key123")
+  })
+
+  it("inferExt 回退到 mp3", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: { audio_url: "https://cdn.example.com/audio.xyz" } }),
+      } as unknown as Response)
+      .mockResolvedValueOnce({
+        ok: true, headers: new Headers({ "content-type": "application/octet-stream" }),
+        arrayBuffer: async () => new ArrayBuffer(4),
+      } as unknown as Response)
+    const node = makeNode({
+      apiUrl: "https://api.example.com/generate", method: "POST", headers: {},
+      bodyTemplate: "{}", auth: "none", authToken: "",
+      pollingEnabled: false, audioUrlField: "data.audio_url", metadataField: "",
+    })
+    const res = await executeMusicNode(node, makeCtx()) as Record<string, unknown>
+    expect(res.fileName).toMatch(/\.mp3$/)
   })
 })
