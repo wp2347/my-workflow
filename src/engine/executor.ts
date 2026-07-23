@@ -15,6 +15,7 @@ import { executeHttpNode } from "./nodes/http"
 import { executeConditionNode } from "./nodes/condition"
 import { executeMergeNode } from "./nodes/merge"
 import { executeCronTriggerNode } from "./nodes/cron_trigger"
+import { executeMusicNode } from "./nodes/music"
 
 // ============================================================
 // 节点执行器注册表
@@ -30,6 +31,7 @@ const nodeExecutors: Record<string, NodeExecutor> = {
   condition: executeConditionNode,
   merge: executeMergeNode,
   cron_trigger: executeCronTriggerNode,
+  music: executeMusicNode,
 }
 
 /**

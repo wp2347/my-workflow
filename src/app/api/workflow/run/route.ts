@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { executeWorkflow } from "@/engine/executor"
+import type { NodeType } from "@/types/workflow"
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,10 +36,10 @@ export async function POST(req: NextRequest) {
 
     const nodes = workflow.nodes.map((n) => ({
       id: n.id,
-      type: n.type as "input" | "llm" | "output",
+      type: n.type as NodeType,
       position: { x: n.positionX, y: n.positionY },
       data: n.data as {
-        type: "input" | "llm" | "output"
+        type: NodeType
         label: string
         config: Record<string, unknown>
       },
