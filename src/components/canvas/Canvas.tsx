@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useRef } from "react"
+import { type NodeType } from "@/types/workflow"
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -25,6 +26,7 @@ import { HttpNodeComponent } from "@/components/nodes/HttpNode"
 import { ConditionNodeComponent } from "@/components/nodes/ConditionNode"
 import { MergeNodeComponent } from "@/components/nodes/MergeNode"
 import { CronTriggerNodeComponent } from "@/components/nodes/CronTriggerNode"
+import { MusicNodeComponent } from "@/components/nodes/MusicNode"
 
 const nodeTypes = {
   input: InputNodeComponent,
@@ -35,6 +37,7 @@ const nodeTypes = {
   condition: ConditionNodeComponent,
   merge: MergeNodeComponent,
   cron_trigger: CronTriggerNodeComponent,
+  music: MusicNodeComponent,
 }
 
 export function Canvas() {
@@ -99,12 +102,12 @@ function CanvasInner() {
 
       addNode({
         id,
-        type: type as "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger",
+        type: type as NodeType,
         position,
         data: {
-          type: type as "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger",
+          type: type as NodeType,
           label: label || type,
-          config: getDefaultConfig(type as "input" | "llm" | "output"),
+          config: getDefaultConfig(type as NodeType),
         },
       })
     },
@@ -146,7 +149,7 @@ function CanvasInner() {
   )
 }
 
-function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger"): Record<string, unknown> {
+function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music"): Record<string, unknown> {
   switch (type) {
     case "input":
       return { name: "message", type: "text", required: true }
@@ -172,5 +175,23 @@ function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" |
       return { name: "定时任务", cronExpr: "0 9 * * *", timezone: "Asia/Shanghai", frequency: "daily" }
     case "feishu":
       return { mode: "send", appId: "", appSecret: "", verificationToken: "", webhookUrl: "", message: "", msgType: "text" }
+    case "music":
+      return {
+        apiUrl: "",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        bodyTemplate: '{\n  "prompt": "{{ $input.prompt }}",\n  "style": "",\n  "duration": 0\n}',
+        auth: "none",
+        authToken: "",
+        pollingEnabled: false,
+        taskIdField: "data.task_id",
+        pollUrlTemplate: "",
+        pollIntervalMs: 3000,
+        pollMaxAttempts: 60,
+        pollStatusField: "",
+        pollSuccessValue: "",
+        audioUrlField: "data.audio_url",
+        metadataField: "data.metadata",
+      }
   }
 }

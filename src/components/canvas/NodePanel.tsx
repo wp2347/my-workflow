@@ -2,7 +2,7 @@
 
 import { type DragEvent } from "react"
 import { Card } from "@/components/ui/card"
-import { MessageSquare, Brain, BookOpen, Send, Globe, GitFork, Combine, Timer, ArrowRight } from "lucide-react"
+import { MessageSquare, Brain, BookOpen, Send, Globe, GitFork, Combine, Timer, ArrowRight, Music } from "lucide-react"
 import { type NodeType } from "@/types/workflow"
 import { useTranslation } from "@/i18n"
 
@@ -15,6 +15,7 @@ const iconMap: Record<NodeType, React.ReactNode> = {
   condition: <GitFork className="h-4 w-4" />,
   merge: <Combine className="h-4 w-4" />,
   cron_trigger: <Timer className="h-4 w-4" />,
+  music: <Music className="h-4 w-4" />,
 }
 
 export function NodePanel() {
@@ -29,6 +30,7 @@ export function NodePanel() {
     { type: "condition", label: t("canvas.condition"), description: t("canvas.conditionDesc") },
     { type: "merge", label: t("canvas.merge"), description: t("canvas.mergeDesc") },
     { type: "cron_trigger", label: t("canvas.cronTrigger"), description: t("canvas.cronTriggerDesc") },
+    { type: "music", label: t("canvas.music"), description: t("canvas.musicDesc") },
   ]
 
   const handleDragStart = (event: DragEvent, type: NodeType, label: string) => {
