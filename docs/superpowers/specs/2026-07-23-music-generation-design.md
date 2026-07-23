@@ -35,11 +35,12 @@ input(text: prompt)  ──►  music(API 调用 + 可选轮询 + 服务端落�
 
 为保证不破坏 `findFinalOutput` 与现有 output 节点消费者，所有扩展字段均为**可选追加**，原字段保留：
 
-- music 节点返回：`{ audioUrl: string, localPath: string, metadata: Record<string, unknown>, raw: string }`
+- music 节点返回：`{ audioUrl: string, localPath: string, fileName: string, metadata: Record<string, unknown>, raw: string }`
   - `audioUrl`：服务端流式播放 URL（`/api/music/file?executionId=...&nodeId=...`）
   - `localPath`：服务端绝对路径（`storage/music/<executionId>_<nodeId>.<ext>`）
+  - `fileName`：实际落盘文件名（`<executionId>_<nodeId>.<ext>`），供下载/预览展示
   - `metadata`：从 API 响应提取的元信息（标题/时长/风格等，原样透传）
-  - `raw`：JSON.stringify(audioUrl + metadata)，供 output 模板占位符替换与现有 `obj.raw` 消费逻辑使用
+  - `raw`：JSON.stringify({ audioUrl, metadata })，保留为 JSON 字符串以兼容 `$json.*` 解析与现有 output 文本汇聚约定（见「raw 语义说明」）
 - output 节点返回（扩展）：`{ output, raw, format, audioUrl?, fileName?, metadata? }`
   - 原三项保留不变
   - 当上游存在 music 节点结果时，追加 `audioUrl/fileName/metadata`
@@ -55,7 +56,9 @@ export interface MusicNodeConfig {
   apiUrl: string                  // 音乐生成 API 地址
   method: "POST" | "GET"
   headers: Record<string, string>
-  bodyTemplate: string            // 支持 {{prompt}}、{{style}}、{{duration}} 占位符
+  bodyTemplate: string            // 模板占位符由统一 resolveExpression 解析（见 src/lib/expression.ts）
+                                   // 推荐写法：{{ $input.prompt }}、{{ $input.style }}、{{ $input.duration }}
+                                   // 也支持 {{ nodeId.field }} 引用任意上游节点输出
   auth: "none" | "bearer" | "api_key"
   authToken: string
   // 异步轮询
@@ -64,6 +67,8 @@ export interface MusicNodeConfig {
   pollUrlTemplate: string         // 如 https://api.xxx.com/tasks/{{taskId}}
   pollIntervalMs: number          // 默认 3000
   pollMaxAttempts: number         // 默认 60
+  pollStatusField: string         // 可选，轮询状态字段路径，如 "data.status"
+  pollSuccessValue: string        // 可选，完成状态值，如 "success"；留空则只按 audioUrlField 有无判定
   // 结果提取
   audioUrlField: string           // 从轮询完成响应提取音频 URL 的路径，如 "data.audio_url"
   metadataField: string           // 可选，提取元信息对象路径，如 "data.metadata"
@@ -72,19 +77,26 @@ export interface MusicNodeConfig {
 
 **执行器** (`src/engine/nodes/music.ts`)
 
-1. 从 `context.input` 读取 `prompt`/`style`/`duration`，替换 `bodyTemplate` 占位符。
-2. 按 `auth` 注入认证头，调用 `apiUrl`。
+复用现有 `resolveExpression`（`src/lib/expression.ts`）解析模板，与 HTTP 节点行为一致：
+
+1. `const url = resolveExpression(config.apiUrl, context)`；`const body = resolveExpression(config.bodyTemplate, context)`（GET 时忽略 body）。模板占位符推荐 `{{ $input.prompt }}`、`{{ $input.style }}`、`{{ $input.duration }}`，也可用 `{{ nodeId.field }}` 引用任意上游节点。
+2. 按 `auth` 注入认证头（bearer/api_key 复用 HTTP 节点实现），调用 `fetch(url, {...})`。
 3. 若 `pollingEnabled`：
-   - 从首次响应按 `taskIdField`（支持 `a.b.c` 点路径）提取 `taskId`。
-   - 用 `pollUrlTemplate.replace("{{taskId}}", taskId)` 构造轮询 URL，按 `pollIntervalMs` 间隔 GET，直到响应中 `audioUrlField` 有值或达到 `pollMaxAttempts`（超时抛错）。
+   - 从首次响应按 `taskIdField`（支持 `a.b.c` 点路径，用 `getByPath`）提取 `taskId`。
+   - 用 `pollUrlTemplate.replace("{{taskId}}", taskId)` 构造轮询 URL，按 `pollIntervalMs` 间隔 GET。
+   - 完成判定：若配置了 `pollStatusField`+`pollSuccessValue`，则按状态值匹配；否则按 `audioUrlField` 有值判定。
+   - 达到 `pollMaxAttempts` 仍未完成抛 `Music generation polling timed out`。
 4. 从最终响应按 `audioUrlField` 取得远程音频 URL，按 `metadataField`（可选）取 metadata。
 5. fetch 远程音频，根据响应 `Content-Type`（`audio/mpeg`→`.mp3`、`audio/wav`→`.wav`、`audio/ogg`→`.ogg`）或 URL 后缀动态推断扩展名；无明确信息时默认 `.mp3`。
-6. 写入服务端 `storage/music/<executionId>_<nodeId>.<ext>`（目录不存在则递归创建）。
-7. 返回 `{ audioUrl: "/api/music/file?executionId=...&nodeId=...", localPath, metadata, raw: JSON.stringify({ audioUrl, metadata }) }`。
+6. 写入服务端 `storage/music/<executionId>_<nodeId>.<ext>`（目录不存在则 `fs.mkdirSync(_, {recursive:true})`）。路径相对项目根 `process.cwd()`。
+7. `fileName = "<executionId>_<nodeId>.<ext>"`；若 metadata 含 title，可衍生 `displayName = "<title>.<ext>"` 仅供下载展示用（文件服务 GET 时从 metadata 反查，见下）。
+8. 返回 `{ audioUrl: "/api/music/file?executionId=...&nodeId=...", localPath, fileName, metadata, raw: JSON.stringify({ audioUrl, metadata }) }`。`raw` 仍是 JSON 字符串以兼容现有 `$json.*` 解析与 output 文本汇聚约定（见「raw 语义说明」）。
+
+**raw 语义说明**：music 的 `raw` 为 JSON 字符串，会被现有 output 节点的文本汇聚收集（output.ts:8-18）并参与默认 text/markdown 输出。若用户不配 template，默认输出会包含该 JSON 噪音——这是现有架构的既有行为（所有节点 raw 都如此汇聚），本次不改动。用户可通过 output `template` 字段控制最终输出文案。预览走 AudioResultCard（依赖 `audioUrl/metadata`，不依赖 raw），不受此影响。
 
 **节点 UI** (`src/components/nodes/MusicNode.tsx`)：仿 `HttpNode.tsx`，展示节点类型图标 + 标题 + apiUrl 摘要。
 
-**配置面板** (`NodeConfigPanel.tsx` 新增 music 分支)：API URL / Method / Headers(JSON textarea) / Body 模板（含占位符提示 `{{prompt}}` `{{style}}` `{{duration}}`）/ 认证（复用 HTTP 节点三种模式）/ 折叠区「异步轮询」(pollingEnabled 开关 + taskIdField + pollUrlTemplate 含提示 `https://api.xxx.com/tasks/{{taskId}}` + pollIntervalMs + pollMaxAttempts) / 折叠区「结果提取」(audioUrlField + metadataField)。
+**配置面板** (`NodeConfigPanel.tsx` 新增 music 分支)：API URL / Method / Headers(JSON textarea) / Body 模板（占位符提示用 `{{ $input.prompt }}` `{{ $input.style }}` `{{ $input.duration }}`）/ 认证（复用 HTTP 节点三种模式）/ 折叠区「异步轮询」(pollingEnabled 开关 + taskIdField + pollUrlTemplate 含提示 `https://api.xxx.com/tasks/{{taskId}}` + pollIntervalMs + pollMaxAttempts + 可选 pollStatusField/pollSuccessValue) / 折叠区「结果提取」(audioUrlField + metadataField)。
 
 ### 2. output 节点增强
 
@@ -103,11 +115,11 @@ export interface OutputNodeConfig {
 **执行器增强** (`src/engine/nodes/output.ts`)
 
 - 现有文本汇聚逻辑保留。
-- 遍历 `context.nodeResults` 找上游 music 节点结果（含 `audioUrl` 字段的对象）。
+- 遍历 `context.nodeResults` 找上游 music 节点结果（含 `audioUrl` 字段的对象）。`fileName` 与 `metadata` 从该 music 结果直接透传（`fileName` 即 music 落盘文件名）。
 - 按 `exportMode`：
   - `download`（默认）：不额外处理，仅把 `audioUrl/fileName/metadata` 透传到返回值，前端历史详情页据此触发下载。
-  - `local`：复制 `localPath` 到 `exportPath/<executionId>.<ext>`（目录不存在则创建）。
-  - `remote`：读取 `localPath` 文件，POST 到 `remoteUrl`（multipart/form-data，字段名 `file`）。
+  - `local`：复制 `localPath` 到 `<exportPath>/<fileName>`（`exportPath` 相对项目根 `process.cwd()`，默认 `storage/exports/`；目录不存在则创建）。
+  - `remote`：读取 `localPath` 文件，POST 到 `remoteUrl`（multipart/form-data，字段名 `file`，文件名用 `fileName`）。
 - 返回 `{ output, raw, format, audioUrl?, fileName?, metadata? }`（仅当存在上游 music 结果时追加后三项）。
 
 **配置面板增强** (`NodeConfigPanel.tsx` output 分支)：现有 format/template 下方新增「导出设置」折叠区：exportMode 单选(下载到本地/保存到服务器目录/上传到远程 URL) + 条件字段（local 显示 exportPath 输入；remote 显示 remoteUrl 输入）。
@@ -127,19 +139,29 @@ export interface OutputNodeConfig {
 
 ### 4. 预置模板
 
-**API** (`src/app/api/workflow/template/music/route.ts`, GET)：返回模板 JSON：
+**API** (`src/app/api/workflow/template/music/route.ts`, GET)：返回模板 JSON。节点 `label` 必须国际化（遵循 AGENTS.md），故 API 读取请求 `?lang=zh|en`（默认读 `Accept-Language` 或回退 `zh`），用 i18n 文案填充 label：
 
 ```jsonc
 {
-  "name": "音乐生成模板",
-  "description": "输入提示词自动生成音乐并导出",
+  "name": "音乐生成模板",          // i18n: templates.music.name
+  "description": "输入提示词自动生成音乐并导出",  // i18n: templates.music.description
   "nodes": [
     { "id": "input-1", "type": "input", "position": { "x": 100, "y": 200 },
-      "data": { "type": "input", "label": "提示词", "config": { "name": "prompt", "type": "text", "required": true, "default": "" } } },
+      "data": { "type": "input", "label": "<提示词/对应en>",   // i18n: templates.music.labelInput
+        "config": { "name": "prompt", "type": "text", "required": true, "default": "" } } },
     { "id": "music-1", "type": "music", "position": { "x": 400, "y": 200 },
-      "data": { "type": "music", "label": "音乐生成", "config": { /* MusicNodeConfig 默认值 */ } } },
+      "data": { "type": "music", "label": "<音乐生成/对应en>", // i18n: templates.music.labelMusic
+        "config": {
+          "apiUrl": "", "method": "POST", "headers": { "Content-Type": "application/json" },
+          "bodyTemplate": "{\n  \"prompt\": \"{{ $input.prompt }}\",\n  \"style\": \"\",\n  \"duration\": 0\n}",
+          "auth": "none", "authToken": "",
+          "pollingEnabled": false, "taskIdField": "data.task_id", "pollUrlTemplate": "",
+          "pollIntervalMs": 3000, "pollMaxAttempts": 60, "pollStatusField": "", "pollSuccessValue": "",
+          "audioUrlField": "data.audio_url", "metadataField": "data.metadata"
+        } } },
     { "id": "output-1", "type": "output", "position": { "x": 700, "y": 200 },
-      "data": { "type": "output", "label": "导出", "config": { "format": "text", "template": "", "exportMode": "download", "exportPath": "storage/exports/", "remoteUrl": "" } } }
+      "data": { "type": "output", "label": "<导出/对应en>",     // i18n: templates.music.labelOutput
+        "config": { "format": "text", "template": "", "exportMode": "download", "exportPath": "storage/exports/", "remoteUrl": "" } } }
   ],
   "edges": [
     { "id": "e1", "source": "input-1", "target": "music-1" },
@@ -148,13 +170,15 @@ export interface OutputNodeConfig {
 }
 ```
 
-**入口**：`src/app/(dashboard)/workflows/page.tsx` 顶部「新建工作流」按钮旁新增「音乐生成模板」按钮。点击 → fetch 模板 API → 用结果调 `useWorkflowStore.setWorkflow` 初始化 → 跳转 `/workflow/new`。复用现有 new 页面的「保存时 POST」逻辑。
+`MusicNodeConfig` 默认值与 `Canvas.tsx` 的 `getDefaultConfig("music")` 保持一致（单一事实源：模板 API 内联引用同一默认值对象，避免漂移）。
+
+**入口**：`src/app/(dashboard)/workflows/page.tsx` 顶部「新建工作流」按钮旁新增「音乐生成模板」按钮。点击 → fetch 模板 API（带当前 locale）→ 用结果调 `useWorkflowStore.setWorkflow` 初始化 → 跳转 `/workflow/new`。复用现有 new 页面的「保存时 POST」逻辑。
 
 ### 5. 文件服务 API
 
 `src/app/api/music/file/route.ts`
 
-- **GET** `?executionId=...&nodeId=...`：根据参数定位 `storage/music/<executionId>_<nodeId>.<ext>`（glob 匹配扩展名），以 `Content-Type: audio/<ext>` 流式返回。用于预览播放与下载。
+- **GET** `?executionId=...&nodeId=...`：根据参数 glob 匹配 `storage/music/<executionId>_<nodeId>.*` 定位文件，以 `Content-Type: audio/<ext>` 流式返回，并设 `Content-Disposition: attachment; filename="<fileName>"`（供下载用）；预览播放由 `<audio src>` 直用同一 URL。
 - **DELETE** `?executionId=...&nodeId=...`：删除上述文件，返回 `{ ok: true }`。用于「清空」。
 
 ### 6. 节点注册（遵循 AGENTS.md 清单）
@@ -179,11 +203,12 @@ export interface OutputNodeConfig {
 
 - `canvas.music` / `canvas.musicDesc`
 - `config.musicApiUrl` / `config.musicMethod` / `config.musicHeaders` / `config.musicBody` / `config.musicBodyHint`（提示可用 `{{prompt}}` `{{style}}` `{{duration}}`）/ `config.musicAuth`
-- `config.musicPolling` / `config.musicPollingHint` / `config.musicTaskIdField` / `config.musicPollUrl` / `config.musicPollUrlHint`（`https://api.xxx.com/tasks/{{taskId}}`）/ `config.musicPollInterval` / `config.musicPollMaxAttempts`
+- `config.musicPolling` / `config.musicPollingHint` / `config.musicTaskIdField` / `config.musicPollUrl` / `config.musicPollUrlHint`（`https://api.xxx.com/tasks/{{taskId}}`）/ `config.musicPollInterval` / `config.musicPollMaxAttempts` / `config.musicPollStatusField` / `config.musicPollSuccessValue`
 - `config.musicResultExtract` / `config.musicAudioUrlField` / `config.musicMetadataField`
 - `config.exportSettings` / `config.exportMode` / `config.exportDownload` / `config.exportLocal` / `config.exportRemote` / `config.exportPath` / `config.exportPathHint` / `config.remoteUrl`
 - `audioResult.preview` / `audioResult.download` / `audioResult.clear` / `audioResult.clearing` / `audioResult.cleared` / `audioResult.noMetadata` / `audioResult.title` / `audioResult.duration` / `audioResult.style`
 - `workflows.musicTemplate` / `workflows.musicTemplateDesc`
+- `templates.music.name` / `templates.music.description` / `templates.music.labelInput` / `templates.music.labelMusic` / `templates.music.labelOutput`
 
 ## 错误处理
 
