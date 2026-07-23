@@ -233,6 +233,134 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
             <Label htmlFor="output-template">{t("config.template")}</Label>
             <Textarea id="output-template" value={(config.template as string) || ""} onChange={(e) => updateConfig("template", e.target.value)} placeholder={t("config.templatePlaceholder")} rows={4} />
           </div>
+          <Separator />
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{t("config.exportSettings")}</summary>
+            <div className="mt-3 space-y-3">
+              <div className="space-y-2">
+                <Label>{t("config.exportMode")}</Label>
+                <Select value={(config.exportMode as string) || "download"} onValueChange={(v) => updateConfig("exportMode", v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="download">{t("config.exportDownload")}</SelectItem>
+                    <SelectItem value="local">{t("config.exportLocal")}</SelectItem>
+                    <SelectItem value="remote">{t("config.exportRemote")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {((config.exportMode as string) || "download") === "local" && (
+                <div className="space-y-2">
+                  <Label htmlFor="export-path">{t("config.exportPath")}</Label>
+                  <Input id="export-path" value={(config.exportPath as string) || ""} onChange={(e) => updateConfig("exportPath", e.target.value)} placeholder="storage/exports/" className="text-sm font-mono" />
+                  <p className="text-[10px] text-muted-foreground">{t("config.exportPathHint")}</p>
+                </div>
+              )}
+              {((config.exportMode as string) || "download") === "remote" && (
+                <div className="space-y-2">
+                  <Label htmlFor="remote-url">{t("config.remoteUrl")}</Label>
+                  <Input id="remote-url" value={(config.remoteUrl as string) || ""} onChange={(e) => updateConfig("remoteUrl", e.target.value)} placeholder="https://upload.example.com" className="text-sm font-mono" />
+                </div>
+              )}
+            </div>
+          </details>
+        </div>
+      )}
+
+      {/* ===== MUSIC NODE ===== */}
+      {node.data.type === "music" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-4 gap-3">
+            <div className="space-y-2 col-span-1">
+              <Label>{t("config.musicMethod")}</Label>
+              <Select value={(config.method as string) || "POST"} onValueChange={(v) => updateConfig("method", v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="POST">POST</SelectItem>
+                  <SelectItem value="GET">GET</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 col-span-3">
+              <Label htmlFor="music-api-url">{t("config.musicApiUrl")}</Label>
+              <Input id="music-api-url" value={(config.apiUrl as string) || ""} onChange={(e) => updateConfig("apiUrl", e.target.value)} placeholder="https://api.example.com/generate" className="text-sm font-mono" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="music-headers">{t("config.musicHeaders")}</Label>
+            <Textarea id="music-headers" value={JSON.stringify(config.headers || {}, null, 2)} onChange={(e) => { try { updateConfig("headers", JSON.parse(e.target.value || "{}")) } catch {} }} placeholder='{\n  "Content-Type": "application/json"\n}' rows={3} className="text-sm font-mono" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="music-body">{t("config.musicBody")}</Label>
+            <Textarea id="music-body" value={(config.bodyTemplate as string) || ""} onChange={(e) => updateConfig("bodyTemplate", e.target.value)} placeholder='{"prompt":"{{ $input.prompt }}"}' rows={4} className="text-sm font-mono" />
+            <p className="text-[10px] text-muted-foreground">{t("config.musicBodyHint")}</p>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("config.musicAuth")}</Label>
+            <Select value={(config.auth as string) || "none"} onValueChange={(v) => updateConfig("auth", v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">{t("config.authNone")}</SelectItem>
+                <SelectItem value="bearer">{t("config.authBearer")}</SelectItem>
+                <SelectItem value="api_key">{t("config.authApiKey")}</SelectItem>
+              </SelectContent>
+            </Select>
+            {((config.auth as string) || "none") !== "none" && (
+              <Input type="password" value={(config.authToken as string) || ""} onChange={(e) => updateConfig("authToken", e.target.value)} placeholder={t("config.musicAuth")} className="text-sm font-mono" />
+            )}
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="music-polling">{t("config.musicPolling")}</Label>
+              <p className="text-[10px] text-muted-foreground">{t("config.musicPollingHint")}</p>
+            </div>
+            <Switch id="music-polling" checked={(config.pollingEnabled as boolean) || false} onCheckedChange={(v) => updateConfig("pollingEnabled", v)} />
+          </div>
+          {(config.pollingEnabled as boolean) && (
+            <div className="space-y-3 p-3 rounded-lg bg-muted/50">
+              <div className="space-y-2">
+                <Label htmlFor="music-task-id" className="text-xs">{t("config.musicTaskIdField")}</Label>
+                <Input id="music-task-id" value={(config.taskIdField as string) || ""} onChange={(e) => updateConfig("taskIdField", e.target.value)} placeholder="data.task_id" className="text-sm font-mono" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="music-poll-url" className="text-xs">{t("config.musicPollUrl")}</Label>
+                <Input id="music-poll-url" value={(config.pollUrlTemplate as string) || ""} onChange={(e) => updateConfig("pollUrlTemplate", e.target.value)} placeholder="https://api.xxx.com/tasks/{{taskId}}" className="text-sm font-mono" />
+                <p className="text-[10px] text-muted-foreground">{t("config.musicPollUrlHint")}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="music-poll-interval" className="text-xs">{t("config.musicPollInterval")}</Label>
+                  <Input id="music-poll-interval" type="number" min={0} step={100} value={config.pollIntervalMs as number ?? 3000} onChange={(e) => updateConfig("pollIntervalMs", parseInt(e.target.value) || 0)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="music-poll-max" className="text-xs">{t("config.musicPollMaxAttempts")}</Label>
+                  <Input id="music-poll-max" type="number" min={1} value={config.pollMaxAttempts as number ?? 60} onChange={(e) => updateConfig("pollMaxAttempts", parseInt(e.target.value) || 1)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="music-poll-status" className="text-xs">{t("config.musicPollStatusField")}</Label>
+                  <Input id="music-poll-status" value={(config.pollStatusField as string) || ""} onChange={(e) => updateConfig("pollStatusField", e.target.value)} placeholder="data.status" className="text-sm font-mono" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="music-poll-success" className="text-xs">{t("config.musicPollSuccessValue")}</Label>
+                  <Input id="music-poll-success" value={(config.pollSuccessValue as string) || ""} onChange={(e) => updateConfig("pollSuccessValue", e.target.value)} placeholder="success" className="text-sm font-mono" />
+                </div>
+              </div>
+            </div>
+          )}
+          <Separator />
+          <div className="space-y-3">
+            <Label className="text-xs font-semibold">{t("config.musicResultExtract")}</Label>
+            <div className="space-y-2">
+              <Label htmlFor="music-audio-url-field" className="text-xs">{t("config.musicAudioUrlField")}</Label>
+              <Input id="music-audio-url-field" value={(config.audioUrlField as string) || ""} onChange={(e) => updateConfig("audioUrlField", e.target.value)} placeholder="data.audio_url" className="text-sm font-mono" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="music-metadata-field" className="text-xs">{t("config.musicMetadataField")}</Label>
+              <Input id="music-metadata-field" value={(config.metadataField as string) || ""} onChange={(e) => updateConfig("metadataField", e.target.value)} placeholder="data.metadata" className="text-sm font-mono" />
+            </div>
+          </div>
         </div>
       )}
 
