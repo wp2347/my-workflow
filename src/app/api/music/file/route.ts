@@ -6,6 +6,27 @@ function musicStorageDir(): string {
   return process.env.MUSIC_STORAGE_DIR || path.join(process.cwd(), "storage", "music")
 }
 
+function mimeForExt(ext: string): string {
+  switch (ext) {
+    case "mp3":
+      return "audio/mpeg"
+    case "m4a":
+      return "audio/mp4"
+    case "aac":
+      return "audio/aac"
+    case "wav":
+      return "audio/wav"
+    case "ogg":
+      return "audio/ogg"
+    case "flac":
+      return "audio/flac"
+    default:
+      return "audio/mpeg"
+  }
+}
+
+const idRegex = /^[A-Za-z0-9_-]+$/
+
 async function resolveFile(
   executionId: string,
   nodeId: string,
@@ -25,37 +46,63 @@ async function resolveFile(
 export async function GET(req: NextRequest) {
   const executionId = req.nextUrl.searchParams.get("executionId")
   const nodeId = req.nextUrl.searchParams.get("nodeId")
-  if (!executionId || !nodeId) {
+  if (
+    !executionId ||
+    !nodeId ||
+    !idRegex.test(executionId) ||
+    !idRegex.test(nodeId)
+  ) {
     return NextResponse.json(
-      { error: "executionId and nodeId are required" },
+      {
+        error:
+          "executionId and nodeId are required and must be alphanumeric/underscore/hyphen only",
+      },
       { status: 400 },
     )
   }
   const found = await resolveFile(executionId, nodeId)
   if (!found) return NextResponse.json({ error: "File not found" }, { status: 404 })
-  const buf = await fs.readFile(found.filePath)
-  const fileName = path.basename(found.filePath)
-  return new NextResponse(new Uint8Array(buf), {
-    status: 200,
-    headers: {
-      "Content-Type": `audio/${found.ext}`,
-      "Content-Disposition": `attachment; filename="${fileName}"`,
-      "Content-Length": String(buf.length),
-    },
-  })
+  try {
+    const buf = await fs.readFile(found.filePath)
+    const fileName = path.basename(found.filePath)
+    return new NextResponse(new Uint8Array(buf), {
+      status: 200,
+      headers: {
+        "Content-Type": mimeForExt(found.ext),
+        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Length": String(buf.length),
+      },
+    })
+  } catch (error) {
+    console.error("music file GET failed:", error)
+    return NextResponse.json({ error: "Failed to read file" }, { status: 500 })
+  }
 }
 
 export async function DELETE(req: NextRequest) {
   const executionId = req.nextUrl.searchParams.get("executionId")
   const nodeId = req.nextUrl.searchParams.get("nodeId")
-  if (!executionId || !nodeId) {
+  if (
+    !executionId ||
+    !nodeId ||
+    !idRegex.test(executionId) ||
+    !idRegex.test(nodeId)
+  ) {
     return NextResponse.json(
-      { error: "executionId and nodeId are required" },
+      {
+        error:
+          "executionId and nodeId are required and must be alphanumeric/underscore/hyphen only",
+      },
       { status: 400 },
     )
   }
   const found = await resolveFile(executionId, nodeId)
   if (!found) return NextResponse.json({ ok: true, alreadyAbsent: true })
-  await fs.unlink(found.filePath)
-  return NextResponse.json({ ok: true })
+  try {
+    await fs.unlink(found.filePath)
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error("music file DELETE failed:", error)
+    return NextResponse.json({ error: "Failed to delete file" }, { status: 500 })
+  }
 }
