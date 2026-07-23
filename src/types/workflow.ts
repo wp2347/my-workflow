@@ -13,7 +13,7 @@ export interface WorkflowConfig {
 }
 
 /** 节点类型联合类型 —— 添加新节点时需同步更新 */
-export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger"
+export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music"
 
 /** 节点 data 字段结构 */
 export interface WorkflowNodeData extends Record<string, unknown> {
@@ -88,6 +88,27 @@ export interface FeishuNodeConfig {
 export interface OutputNodeConfig {
   format: "text" | "json" | "markdown"
   template?: string
+  exportMode: "download" | "local" | "remote"
+  exportPath: string
+  remoteUrl: string
+}
+
+export interface MusicNodeConfig {
+  apiUrl: string
+  method: "POST" | "GET"
+  headers: Record<string, string>
+  bodyTemplate: string
+  auth: "none" | "bearer" | "api_key"
+  authToken: string
+  pollingEnabled: boolean
+  taskIdField: string
+  pollUrlTemplate: string
+  pollIntervalMs: number
+  pollMaxAttempts: number
+  pollStatusField: string
+  pollSuccessValue: string
+  audioUrlField: string
+  metadataField: string
 }
 
 // ---- 执行相关类型 ----
