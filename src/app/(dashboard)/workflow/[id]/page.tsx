@@ -23,13 +23,37 @@ export default function WorkflowEditorPage() {
 
   useEffect(() => {
     if (isNew) {
-      // Reset store for new workflow
-      setWorkflow(
-        { id: "", name: "未命名工作流", description: "", config: {}, createdAt: "", updatedAt: "" },
-        [], [],
-      )
-      setWorkflowId(null)
-      setLoading(false)
+      const params = new URLSearchParams(window.location.search)
+      const template = params.get("template")
+
+      if (template === "music") {
+        const lang = localStorage.getItem("workflow-locale") || "zh"
+        fetch(`/api/workflow/template/music?lang=${lang}`)
+          .then((r) => r.json())
+          .then((tpl) => {
+            setWorkflow(
+              { id: "", name: tpl.name, description: tpl.description, config: {}, createdAt: "", updatedAt: "" },
+              tpl.nodes.map((n: {
+                id: string
+                type: string
+                position: { x: number; y: number }
+                data: Record<string, unknown>
+              }) => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
+              tpl.edges.map((e: { id: string; source: string; target: string }) => ({ id: e.id, source: e.source, target: e.target })),
+            )
+            setWorkflowId(null)
+          })
+          .catch(console.error)
+          .finally(() => setLoading(false))
+      } else {
+        // Reset store for new workflow
+        setWorkflow(
+          { id: "", name: "未命名工作流", description: "", config: {}, createdAt: "", updatedAt: "" },
+          [], [],
+        )
+        setWorkflowId(null)
+        setLoading(false)
+      }
       return
     }
 

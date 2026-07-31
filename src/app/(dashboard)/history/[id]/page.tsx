@@ -15,6 +15,7 @@ export default function ExecutionDetailPage() {
   const id = params.id as string
   const [data, setData] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
+  const [clearedKeys, setClearedKeys] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetch(`/api/workflow/executions/${id}`)
@@ -80,13 +81,17 @@ export default function ExecutionDetailPage() {
                   const out = log.output as Record<string, unknown> | null
                   const isAudio = out && typeof out === "object" && typeof out.audioUrl === "string"
                   if (isAudio) {
+                    const audioNodeId = (out!.audioUrl as string).match(/[?&]nodeId=([^&]+)/)?.[1] || ""
+                    const clearKey = `${id}_${audioNodeId}`
+                    if (clearedKeys.has(clearKey)) return null
                     return (
                       <AudioResultCard
                         executionId={id}
-                        nodeId={log.nodeId as string}
+                        nodeId={audioNodeId}
                         audioUrl={out!.audioUrl as string}
                         fileName={(out!.fileName as string) || "audio"}
                         metadata={(out!.metadata as Record<string, unknown>) || {}}
+                        onCleared={() => setClearedKeys((prev) => new Set(prev).add(clearKey))}
                       />
                     )
                   }
