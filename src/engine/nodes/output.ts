@@ -98,8 +98,10 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
       const remoteUrl = (config.remoteUrl as string) || ""
       if (!remoteUrl) throw new Error("Export mode is remote but remoteUrl is empty")
       const fileBuf = await fs.readFile(music.localPath)
+      const ext = path.extname(music.fileName).replace(".", "")
+      const mime = ext === "wav" ? "audio/wav" : ext === "ogg" ? "audio/ogg" : ext === "m4a" ? "audio/mp4" : "audio/mpeg"
       const form = new FormData()
-      form.append("file", new Blob([fileBuf], { type: "audio/mpeg" }), music.fileName)
+      form.append("file", new Blob([fileBuf], { type: mime }), music.fileName)
       const res = await fetch(remoteUrl, { method: "POST", body: form })
       if (!res.ok) throw new Error(`Remote upload failed: ${res.status}`)
     }

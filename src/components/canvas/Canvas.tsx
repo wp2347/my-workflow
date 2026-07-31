@@ -164,7 +164,7 @@ function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" |
         maxTokens: 4096,
       }
     case "output":
-      return { format: "text", template: "" }
+      return { format: "text", template: "", exportMode: "download", exportPath: "storage/exports/", remoteUrl: "" }
     case "http":
       return { method: "GET", url: "", headers: {}, body: "", auth: "none", authUsername: "", authPassword: "", authToken: "" }
     case "condition":
