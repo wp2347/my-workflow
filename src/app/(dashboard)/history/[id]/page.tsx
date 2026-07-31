@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { AudioResultCard } from "@/components/panels/AudioResultCard"
 import { Loader2, CheckCircle, XCircle, ArrowLeft, Clock } from "lucide-react"
 
 export default function ExecutionDetailPage() {
@@ -75,14 +76,32 @@ export default function ExecutionDetailPage() {
                   </div>
                 )}
 
-                {Boolean(log.output) && (
-                  <details className="mt-2 text-xs">
-                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">输出数据</summary>
-                    <pre className="mt-1 p-2 rounded bg-muted font-mono text-[11px] whitespace-pre-wrap break-all max-h-48 overflow-auto">
-                      {JSON.stringify(log.output, null, 2).substring(0, 1000)}
-                    </pre>
-                  </details>
-                )}
+                {(() => {
+                  const out = log.output as Record<string, unknown> | null
+                  const isAudio = out && typeof out === "object" && typeof out.audioUrl === "string"
+                  if (isAudio) {
+                    return (
+                      <AudioResultCard
+                        executionId={id}
+                        nodeId={log.nodeId as string}
+                        audioUrl={out!.audioUrl as string}
+                        fileName={(out!.fileName as string) || "audio"}
+                        metadata={(out!.metadata as Record<string, unknown>) || {}}
+                      />
+                    )
+                  }
+                  if (out) {
+                    return (
+                      <details className="mt-2 text-xs">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">输出数据</summary>
+                        <pre className="mt-1 p-2 rounded bg-muted font-mono text-[11px] whitespace-pre-wrap break-all max-h-48 overflow-auto">
+                          {JSON.stringify(out, null, 2).substring(0, 1000)}
+                        </pre>
+                      </details>
+                    )
+                  }
+                  return null
+                })()}
               </CardHeader>
             </Card>
           ))}
