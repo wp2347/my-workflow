@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -9,15 +10,41 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useTranslation } from "@/i18n"
 import { getNextRunTime } from "@/lib/cron-helper"
-import { Workflow, Plus, ArrowRight, Loader2, Trash2 } from "lucide-react"
+import { Workflow, Plus, ArrowRight, Loader2, Trash2, Music } from "lucide-react"
+import { useWorkflowStore } from "@/stores/workflow"
 import type { WorkflowConfig } from "@/types/workflow"
+
+type TemplateNode = { id: string; type: string; position: { x: number; y: number }; data: { type: string; label: string; config: Record<string, unknown> } }
+type TemplateEdge = { id: string; source: string; target: string }
 
 export default function WorkflowsPage() {
   const { t } = useTranslation()
+  const router = useRouter()
+  const { setWorkflow, setWorkflowId } = useWorkflowStore()
   const [workflows, setWorkflows] = useState<(WorkflowConfig & { enabled?: boolean; schedule?: string | null })[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<WorkflowConfig | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [creatingTemplate, setCreatingTemplate] = useState(false)
+
+  const handleCreateFromMusicTemplate = async () => {
+    setCreatingTemplate(true)
+    try {
+      const lang = typeof localStorage !== "undefined" ? (localStorage.getItem("workflow-locale") || "zh") : "zh"
+      const tpl = await fetch(`/api/workflow/template/music?lang=${lang}`).then((r) => r.json())
+      setWorkflow(
+        { id: "", name: tpl.name, description: tpl.description, config: {}, createdAt: "", updatedAt: "" },
+        tpl.nodes.map((n: TemplateNode) => ({ id: n.id, type: n.type as never, position: n.position, data: n.data })),
+        tpl.edges.map((e: TemplateEdge) => ({ id: e.id, source: e.source, target: e.target })),
+      )
+      setWorkflowId(null)
+      router.push("/workflow/new")
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setCreatingTemplate(false)
+    }
+  }
 
   const fetchWorkflows = useCallback(() => {
     setLoading(true)
@@ -56,9 +83,14 @@ export default function WorkflowsPage() {
           <h1 className="text-2xl font-bold">{t("workflows.title")}</h1>
           <p className="text-muted-foreground mt-1">{t("workflows.description")}</p>
         </div>
-        <Link href="/workflow/new">
-          <Button><Plus className="h-4 w-4 mr-2" />{t("workflows.newWorkflow")}</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/workflow/new">
+            <Button><Plus className="h-4 w-4 mr-2" />{t("workflows.newWorkflow")}</Button>
+          </Link>
+          <Button variant="outline" onClick={handleCreateFromMusicTemplate} disabled={creatingTemplate}>
+            <Music className="h-4 w-4 mr-2" />{t("workflows.musicTemplate")}
+          </Button>
+        </div>
       </div>
 
       {loading ? (
