@@ -198,6 +198,7 @@
     "musicApiUrl": "API 地址",
     "musicMethod": "请求方法",
     "musicHeaders": "请求头",
+    "musicHeadersError": "JSON 格式错误",
     "musicBody": "请求体模板",
     "musicBodyHint": "可用占位符：{{ $input.prompt }}、{{ $input.style }}、{{ $input.duration }}，或 {{ nodeId.field }} 引用上游节点",
     "musicAuth": "认证方式",

@@ -194,6 +194,7 @@
     "musicApiUrl": "API URL",
     "musicMethod": "Method",
     "musicHeaders": "Headers",
+    "musicHeadersError": "Invalid JSON",
     "musicBody": "Body Template",
     "musicBodyHint": "Placeholders: {{ $input.prompt }}, {{ $input.style }}, {{ $input.duration }}, or {{ nodeId.field }} to reference upstream nodes",
     "musicAuth": "Authentication",

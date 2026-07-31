@@ -24,6 +24,15 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   const config = (node.data.config as Record<string, unknown>) || {}
   const [showApiKey, setShowApiKey] = useState(false)
   const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([])
+  const [headersText, setHeadersText] = useState(() => JSON.stringify(config.headers || {}, null, 2))
+  const [headersError, setHeadersError] = useState<string | null>(null)
+  const [prevHeadersConfig, setPrevHeadersConfig] = useState(config.headers)
+
+  if (config.headers !== prevHeadersConfig) {
+    setPrevHeadersConfig(config.headers)
+    setHeadersText(JSON.stringify((config.headers as Record<string, string>) || {}, null, 2))
+    setHeadersError(null)
+  }
 
   // Cron local state
   const [cronFrequency, setCronFrequency] = useState(() => (config.frequency as string) || "daily")
@@ -287,7 +296,22 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="music-headers">{t("config.musicHeaders")}</Label>
-            <Textarea id="music-headers" value={JSON.stringify(config.headers || {}, null, 2)} onChange={(e) => { try { updateConfig("headers", JSON.parse(e.target.value || "{}")) } catch {} }} placeholder='{\n  "Content-Type": "application/json"\n}' rows={3} className="text-sm font-mono" />
+            <Textarea id="music-headers" value={headersText} rows={3} className="text-sm font-mono"
+              onChange={(e) => {
+                setHeadersText(e.target.value)
+                try {
+                  const parsed = JSON.parse(e.target.value || "{}")
+                  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                    updateConfig("headers", parsed)
+                    setHeadersError(null)
+                  } else {
+                    setHeadersError(t("config.musicHeadersError"))
+                  }
+                } catch {
+                  setHeadersError(t("config.musicHeadersError"))
+                }
+              }} placeholder='{\n  "Content-Type": "application/json"\n}' />
+            {headersError && <p className="text-[10px] text-destructive">{headersError}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="music-body">{t("config.musicBody")}</Label>
