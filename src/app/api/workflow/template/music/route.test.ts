@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { buildMusicTemplate } from "@/app/api/workflow/template/music/route"
+import { buildMusicTemplate } from "@/app/api/workflow/template/music/template"
 
 describe("buildMusicTemplate", () => {
   it("zh 返回中文 label 与 3 节点 2 边", () => {
