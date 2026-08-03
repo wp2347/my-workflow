@@ -10,6 +10,7 @@ import { z } from "zod"
 
 import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
 import { getProvider } from "@/lib/providers"
+import { resolveCredentialValue } from "@/lib/credential"
 import { mergeExtensions } from "@/engine/extensions/merge"
 import { loadSkills } from "@/engine/extensions/skill-loader"
 import { renderPrompts } from "@/engine/extensions/prompt-renderer"
@@ -72,13 +73,22 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   const maxTokens = (config.maxTokens as number) ?? 4096
   const apiKey = (config.apiKey as string) || ""
   const baseUrl = (config.baseUrl as string) || ""
+  const credentialId = (config.credentialId as string) || ""
   const userInput = getPreviousOutputs(node, context)
 
   // 从 providers 配置中获取默认 API key 和 base URL
   const providerInfo = getProvider(provider)
   const defaultBaseUrl = providerInfo?.defaultBaseUrl || "https://api.openai.com/v1"
   const defaultApiKey = process.env[providerInfo?.defaultApiKeyEnv || ""] || ""
-  const finalApiKey = apiKey || defaultApiKey || process.env.OPENAI_API_KEY || ""
+
+  // 凭证优先：credentialId 非空时从数据库读取解密值作为 key
+  let credentialKey: string | null = null
+  if (credentialId) {
+    credentialKey = await resolveCredentialValue(credentialId)
+    if (!credentialKey) throw new Error(`Credential not found: ${credentialId}`)
+  }
+
+  const finalApiKey = credentialKey ?? (apiKey || defaultApiKey || process.env.OPENAI_API_KEY || "")
   const finalBaseUrl = baseUrl || defaultBaseUrl
 
   if (!finalApiKey) throw new Error(`No API key for ${providerInfo?.name || provider}`)
