@@ -221,7 +221,12 @@
     "exportRemote": "上传到远程 URL",
     "exportPath": "导出目录",
     "exportPathHint": "相对于项目根目录，默认 storage/exports/",
-    "remoteUrl": "远程上传 URL"
+    "remoteUrl": "远程上传 URL",
+    "selectCredential": "选择全局凭证",
+    "credentialManual": "手动输入",
+    "credentialSelected": "已选凭证",
+    "noCredential": "暂无全局凭证，请先在凭证管理中添加。",
+    "credentialLink": "前往凭证管理"
   },
   "audioResult": {
     "preview": "预览",

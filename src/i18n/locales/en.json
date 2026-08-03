@@ -217,7 +217,12 @@
     "exportRemote": "Upload to remote URL",
     "exportPath": "Export Directory",
     "exportPathHint": "Relative to project root, default storage/exports/",
-    "remoteUrl": "Remote Upload URL"
+    "remoteUrl": "Remote Upload URL",
+    "selectCredential": "Select global credential",
+    "credentialManual": "Manual input",
+    "credentialSelected": "Credential selected",
+    "noCredential": "No global credentials yet. Add one in Credentials first.",
+    "credentialLink": "Go to Credentials"
   },
   "audioResult": {
     "preview": "Preview",
