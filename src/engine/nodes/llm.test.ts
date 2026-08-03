@@ -36,7 +36,7 @@ describe("executeLLMNode credential resolution", () => {
     // vitest.setup.ts 设置了 OPENAI_API_KEY=test-key，这里清空以保证
     // 「无 env key → 抛 No API key」的分支可被验证
     vi.stubEnv("OPENAI_API_KEY", "")
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
   afterEach(() => {
     vi.unstubAllEnvs()
@@ -63,7 +63,6 @@ describe("executeLLMNode credential resolution", () => {
 
   it("credentialId 为空 → 走原逻辑（无 env key 时抛 No API key）", async () => {
     resolveCredentialValue.mockResolvedValue(null)
-    generateText.mockRejectedValue(new Error("AI SDK network call failed (mocked)"))
     const node = makeNode({ provider: "openai", model: "gpt-4o-mini", apiKey: "", credentialId: "" })
 
     await expect(executeLLMNode(node, makeCtx())).rejects.toThrow(/No API key/)
