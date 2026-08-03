@@ -9,6 +9,9 @@
     "workflows": "Workflows",
     "newWorkflow": "New Workflow",
     "extensions": "Extensions",
+    "history": "History",
+    "credentials": "Credentials",
+    "knowledge": "Knowledge",
     "templates": "Templates"
   },
   "home": {
@@ -36,7 +39,11 @@
     "deleteDesc": "Are you sure you want to delete \"{name}\"? This action cannot be undone. All nodes, edges, and execution history will be permanently removed.",
     "cancel": "Cancel",
     "musicTemplate": "Music Generation Template",
-    "musicTemplateDesc": "Generate music from a prompt and export it"
+    "musicTemplateDesc": "Generate music from a prompt and export it",
+    "completed": "Success",
+    "failed": "Failed",
+    "prev": "Prev",
+    "next": "Next"
   },
   "canvas": {
     "nodes": "Nodes",
@@ -156,11 +163,11 @@
     "conditionHintFalse": "FALSE → Red port",
     "conditionHintDesc": "Connect to corresponding port to create branches",
     "mergeStrategy": "Merge Strategy",
-    "mergeConcat": "Concatenate",
-    "mergeJsonArray": "JSON Array",
-    "mergeFirst": "First",
-    "mergeLast": "Last",
-    "mergeHint": "Combine outputs from multiple branches by strategy.",
+    "mergeConcat": "Concatenate text",
+    "mergeJsonArray": "JSON array",
+    "mergeFirst": "Take first",
+    "mergeLast": "Take last",
+    "mergeHint": "Merge upstream node outputs by strategy. Often used to combine IF/ELSE branches.",
     "cronName": "Task Name",
     "cronNamePlaceholder": "e.g. Daily Report",
     "cronFrequency": "Frequency",
@@ -385,5 +392,93 @@
       "resources": "Resources",
       "inherited": "Inherited from workflow"
     }
+  },
+  "history": {
+    "title": "Execution History",
+    "description": "View execution records of all workflows",
+    "noExecutions": "No execution records",
+    "noExecutionsDesc": "Execution history will appear here after running workflows"
+  },
+  "historyDetail": {
+    "notFound": "Execution record not found",
+    "title": "Execution Details",
+    "completed": "Success",
+    "failed": "Failed",
+    "output": "Output Data"
+  },
+  "credentials": {
+    "title": "Credentials",
+    "description": "AES-256 encrypted storage. Click the eye to view plaintext, click the key to copy",
+    "add": "Add Credential",
+    "noCreds": "No credentials",
+    "noCredsDesc": "Add sensitive credentials like API keys",
+    "copy": "Click to copy",
+    "view": "Click the eye to view",
+    "copied": "Copied",
+    "addTitle": "Add Credential",
+    "addDesc": "AES-256 encrypted storage to database",
+    "name": "Name",
+    "namePlaceholder": "e.g. DeepSeek API Key",
+    "type": "Type",
+    "value": "Value",
+    "scope": "Scope",
+    "global": "Global",
+    "workflow": "Workflow",
+    "node": "Node",
+    "cancel": "Cancel",
+    "save": "Save",
+    "deleteTitle": "Delete Credential",
+    "deleteDesc": "Delete \"{name}\"? This cannot be undone.",
+    "delete": "Delete"
+  },
+  "knowledge": {
+    "title": "Knowledge Base",
+    "description": "Upload documents, vectorize for RAG-enhanced generation",
+    "addDoc": "Add Document",
+    "noDocs": "No documents",
+    "noDocsDesc": "Upload PDF/TXT/Markdown to build a knowledge base",
+    "uploadFile": "Upload File",
+    "manualInput": "or enter manually",
+    "manualInputName": "Manual input",
+    "docName": "Document Name",
+    "docNamePlaceholder": "Document name",
+    "content": "Content",
+    "contentPlaceholder": "Paste document content...",
+    "cancel": "Cancel",
+    "upload": "Upload",
+    "chunks": "{count} chunks · {type}",
+    "chunkSize": "{size} chars/chunk"
+  },
+  "toolbar": {
+    "run": "Run",
+    "webhook": "Webhook",
+    "webhookTitle": "Webhook URL",
+    "webhookDesc": "POST requests to this address trigger the workflow",
+    "copied": "Copied",
+    "copy": "Copy URL",
+    "curlExample": "curl example:",
+    "status": "Status: {status}",
+    "duration": "Duration: {duration}ms",
+    "error": "   Error: {error}",
+    "output": "   Output: {output}",
+    "requestFailed": "Request failed: {error}",
+    "runResultTitle": "Execution Result"
+  },
+  "cronNode": {
+    "label": "Cron",
+    "unconfigured": "Not configured",
+    "hourly": "Hourly",
+    "daily": "Daily {time}",
+    "weekday": "Weekdays {time}",
+    "weekly": "Weekly {day} {time}",
+    "days": { "0": "Sun", "1": "Mon", "2": "Tue", "3": "Wed", "4": "Thu", "5": "Fri", "6": "Sat" }
+  },
+  "widget": {
+    "requestFailed": "Request failed, please retry",
+    "startChat": "Send a message to start chatting",
+    "inputPlaceholder": "Type a message..."
+  },
+  "workflow": {
+    "untitled": "Untitled Workflow"
   }
 }
