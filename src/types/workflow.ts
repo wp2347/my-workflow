@@ -56,6 +56,7 @@ export interface LLMNodeConfig {
   systemPrompt: string
   temperature: number
   maxTokens: number
+  credentialId?: string
 }
 
 export interface ConditionNodeConfig {
@@ -109,6 +110,7 @@ export interface MusicNodeConfig {
   pollSuccessValue: string
   audioUrlField: string
   metadataField: string
+  credentialId?: string
 }
 
 // ---- 执行相关类型 ----
