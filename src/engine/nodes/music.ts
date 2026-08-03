@@ -3,6 +3,7 @@ import path from "path"
 import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
 import { resolveExpression } from "@/lib/expression"
 import { getByPath } from "@/lib/json-path"
+import { resolveCredentialValue } from "@/lib/credential"
 
 function musicStorageDir(): string {
   return process.env.MUSIC_STORAGE_DIR || path.join(process.cwd(), "storage", "music")
@@ -29,14 +30,23 @@ export const executeMusicNode: NodeExecutor = async (node, context) => {
   const headers: Record<string, string> = { ...((config.headers as Record<string, string>) || {}) }
   const auth = (config.auth as string) || "none"
   const authToken = (config.authToken as string) || ""
+  const credentialId = (config.credentialId as string) || ""
 
   const url = resolveExpression((config.apiUrl as string) || "", context)
   if (!url) throw new Error("Music API URL is not configured")
 
   const body = method !== "GET" ? resolveExpression((config.bodyTemplate as string) || "", context) : ""
 
-  if (auth === "bearer" && authToken) headers["Authorization"] = `Bearer ${resolveExpression(authToken, context)}`
-  else if (auth === "api_key" && authToken) headers["X-API-Key"] = resolveExpression(authToken, context)
+  // 凭证优先：credentialId 非空时从数据库读取解密值作为 token
+  let effectiveToken = authToken
+  if (credentialId) {
+    const credValue = await resolveCredentialValue(credentialId)
+    if (!credValue) throw new Error(`Credential not found: ${credentialId}`)
+    effectiveToken = credValue
+  }
+
+  if (auth === "bearer" && effectiveToken) headers["Authorization"] = `Bearer ${resolveExpression(effectiveToken, context)}`
+  else if (auth === "api_key" && effectiveToken) headers["X-API-Key"] = resolveExpression(effectiveToken, context)
 
   const init: RequestInit = { method, headers }
   if (method !== "GET" && body) init.body = body
