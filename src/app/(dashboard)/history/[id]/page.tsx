@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AudioResultCard } from "@/components/panels/AudioResultCard"
+import { useTranslation } from "@/i18n"
 import { Loader2, CheckCircle, XCircle, ArrowLeft, Clock } from "lucide-react"
 
 export default function ExecutionDetailPage() {
+  const { t } = useTranslation()
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
@@ -26,7 +28,7 @@ export default function ExecutionDetailPage() {
   }, [id])
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
-  if (!data) return <div className="p-6">未找到执行记录</div>
+  if (!data) return <div className="p-6">{t("historyDetail.notFound")}</div>
 
   const logs = (data.logs as Array<Record<string, unknown>>) || []
 
@@ -37,13 +39,13 @@ export default function ExecutionDetailPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-xl font-bold">{data.workflowName as string || "执行详情"}</h1>
+          <h1 className="text-xl font-bold">{data.workflowName as string || t("historyDetail.title")}</h1>
           <p className="text-sm text-muted-foreground">
             {new Date(data.createdAt as string).toLocaleString()} · {(data.durationMs as number) || 0}ms
           </p>
         </div>
         <Badge variant={(data.status as string) === "completed" ? "default" : "destructive"}>
-          {(data.status as string) === "completed" ? "成功" : "失败"}
+          {(data.status as string) === "completed" ? t("historyDetail.completed") : t("historyDetail.failed")}
         </Badge>
       </div>
 
@@ -98,7 +100,7 @@ export default function ExecutionDetailPage() {
                   if (out) {
                     return (
                       <details className="mt-2 text-xs">
-                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">输出数据</summary>
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{t("historyDetail.output")}</summary>
                         <pre className="mt-1 p-2 rounded bg-muted font-mono text-[11px] whitespace-pre-wrap break-all max-h-48 overflow-auto">
                           {JSON.stringify(out, null, 2).substring(0, 1000)}
                         </pre>

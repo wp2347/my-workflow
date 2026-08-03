@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useTranslation } from "@/i18n"
 import { Loader2, Clock, CheckCircle, XCircle, Activity, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 
 interface ExecutionRow {
@@ -23,6 +24,7 @@ interface ExecutionRow {
 }
 
 export default function HistoryPage() {
+  const { t } = useTranslation()
   const [executions, setExecutions] = useState<ExecutionRow[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -50,9 +52,9 @@ export default function HistoryPage() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Activity className="h-6 w-6" />
-            执行历史
+            {t("history.title")}
           </h1>
-          <p className="text-muted-foreground mt-1">查看所有工作流的执行记录</p>
+          <p className="text-muted-foreground mt-1">{t("history.description")}</p>
         </div>
       </div>
 
@@ -65,8 +67,8 @@ export default function HistoryPage() {
           ) : executions.length === 0 ? (
             <Card className="p-12 text-center">
               <Clock className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-1">暂无执行记录</h3>
-              <p className="text-muted-foreground">运行工作流后这里会显示执行历史</p>
+              <h3 className="text-lg font-semibold mb-1">{t("history.noExecutions")}</h3>
+              <p className="text-muted-foreground">{t("history.noExecutionsDesc")}</p>
             </Card>
           ) : (
             <div className="space-y-2 pr-4 pb-4">
@@ -106,7 +108,7 @@ export default function HistoryPage() {
                         variant={ex.status === "completed" ? "default" : ex.status === "failed" ? "destructive" : "secondary"}
                         className="text-xs"
                       >
-                        {ex.status === "completed" ? "成功" : ex.status === "failed" ? "失败" : ex.status}
+                        {ex.status === "completed" ? t("workflows.completed") : ex.status === "failed" ? t("workflows.failed") : ex.status}
                       </Badge>
                 </div>
               </CardHeader>
@@ -127,7 +129,7 @@ export default function HistoryPage() {
             onClick={() => fetchData(page - 1)}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            上一页
+            {t("workflows.prev")}
           </Button>
           <span className="text-sm text-muted-foreground px-3">
             {page} / {totalPages}
@@ -137,7 +139,7 @@ export default function HistoryPage() {
             disabled={page >= totalPages}
             onClick={() => fetchData(page + 1)}
           >
-            下一页
+            {t("workflows.next")}
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
