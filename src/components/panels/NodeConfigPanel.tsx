@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Trash2, ExternalLink, Eye, EyeOff, Package } from "lucide-react"
 import { ExtensionPicker } from "@/components/extensions/ExtensionPicker"
+import { CredentialSelect } from "@/components/panels/CredentialSelect"
 
 interface NodeConfigPanelProps { node: WorkflowNode }
 
@@ -132,17 +133,30 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
           </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="llm-apikey" className="text-xs text-muted-foreground">{t("config.apiKey")}</Label>
-              {selectedProvider && (
-                <a href={selectedProvider.docs} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-0.5">{t("config.getKey")}<ExternalLink className="h-2.5 w-2.5" /></a>
-              )}
+              <Label className="text-xs text-muted-foreground">{t("config.selectCredential")}</Label>
+              {(config.credentialId as string) && <Badge variant="outline" className="text-[10px]">{t("config.credentialSelected")}</Badge>}
             </div>
-            <div className="relative">
-              <Input id="llm-apikey" type={showApiKey ? "text" : "password"} value={(config.apiKey as string) || ""} onChange={(e) => updateConfig("apiKey", e.target.value)} placeholder={selectedProvider ? `Env: ${selectedProvider.defaultApiKeyEnv}` : t("config.apiKeyPlaceholder")} className="pr-8 text-sm font-mono" />
-              <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">{showApiKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}</button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">{t("config.apiKeyHint", { env: selectedProvider?.defaultApiKeyEnv || "OPENAI_API_KEY" })}</p>
+            <CredentialSelect
+              credentialId={(config.credentialId as string) || ""}
+              onSelect={(id) => updateConfig("credentialId", id)}
+              onClear={() => updateConfig("credentialId", "")}
+            />
           </div>
+          {!config.credentialId && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="llm-apikey" className="text-xs text-muted-foreground">{t("config.apiKey")}</Label>
+                {selectedProvider && (
+                  <a href={selectedProvider.docs} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-0.5">{t("config.getKey")}<ExternalLink className="h-2.5 w-2.5" /></a>
+                )}
+              </div>
+              <div className="relative">
+                <Input id="llm-apikey" type={showApiKey ? "text" : "password"} value={(config.apiKey as string) || ""} onChange={(e) => updateConfig("apiKey", e.target.value)} placeholder={selectedProvider ? `Env: ${selectedProvider.defaultApiKeyEnv}` : t("config.apiKeyPlaceholder")} className="pr-8 text-sm font-mono" />
+                <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">{showApiKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}</button>
+              </div>
+              <p className="text-[10px] text-muted-foreground">{t("config.apiKeyHint", { env: selectedProvider?.defaultApiKeyEnv || "OPENAI_API_KEY" })}</p>
+            </div>
+          )}
           <details className="text-xs">
             <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{t("config.advanced")}</summary>
             <div className="mt-2"><Input value={(config.baseUrl as string) || ""} onChange={(e) => updateConfig("baseUrl", e.target.value)} placeholder={selectedProvider?.defaultBaseUrl} className="text-sm font-mono" /></div>
@@ -329,7 +343,16 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
               </SelectContent>
             </Select>
             {((config.auth as string) || "none") !== "none" && (
-              <Input type="password" value={(config.authToken as string) || ""} onChange={(e) => updateConfig("authToken", e.target.value)} placeholder={t("config.musicAuth")} className="text-sm font-mono" />
+              <>
+                <CredentialSelect
+                  credentialId={(config.credentialId as string) || ""}
+                  onSelect={(id) => updateConfig("credentialId", id)}
+                  onClear={() => updateConfig("credentialId", "")}
+                />
+                {!config.credentialId && (
+                  <Input type="password" value={(config.authToken as string) || ""} onChange={(e) => updateConfig("authToken", e.target.value)} placeholder={t("config.musicAuth")} className="text-sm font-mono" />
+                )}
+              </>
             )}
           </div>
           <Separator />
