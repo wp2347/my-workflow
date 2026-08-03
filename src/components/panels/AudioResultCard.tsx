@@ -34,10 +34,9 @@ export function AudioResultCard({ executionId, nodeId, audioUrl, fileName, metad
     }
   }
 
-  const known: Record<string, string> = {
-    title: t("audioResult.title"),
-    duration: t("audioResult.duration"),
-    style: t("audioResult.style"),
+  const fieldLabel = (key: string): string => {
+    const label = t(`audioResult.fields.${key}`)
+    return label === `audioResult.fields.${key}` ? key : label
   }
   const entries = Object.entries(metadata || {})
 
@@ -59,7 +58,7 @@ export function AudioResultCard({ executionId, nodeId, audioUrl, fileName, metad
           <dl className="text-xs space-y-1">
             {entries.map(([k, v]) => (
               <div key={k} className="flex gap-2">
-                <dt className="text-muted-foreground min-w-[60px]">{known[k] || k}</dt>
+                <dt className="text-muted-foreground min-w-[60px]">{fieldLabel(k)}</dt>
                 <dd className="text-foreground break-all">{String(v)}</dd>
               </div>
             ))}
