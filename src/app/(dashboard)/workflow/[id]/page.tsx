@@ -8,11 +8,13 @@ import { NodePanel } from "@/components/canvas/NodePanel"
 import { ConfigPanel } from "@/components/canvas/ConfigPanel"
 import { Toolbar } from "@/components/panels/Toolbar"
 import { Loader2 } from "lucide-react"
+import { useTranslation } from "@/i18n"
 
 export default function WorkflowEditorPage() {
   const params = useParams()
   const workflowId = params.id as string
   const isNew = workflowId === "new"
+  const { t } = useTranslation()
 
   const {
     setWorkflowId,
@@ -48,7 +50,7 @@ export default function WorkflowEditorPage() {
       } else {
         // Reset store for new workflow
         setWorkflow(
-          { id: "", name: "未命名工作流", description: "", config: {}, createdAt: "", updatedAt: "" },
+          { id: "", name: t("workflow.untitled"), description: "", config: {}, createdAt: "", updatedAt: "" },
           [], [],
         )
         setWorkflowId(null)

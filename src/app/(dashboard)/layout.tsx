@@ -78,7 +78,7 @@ export default function DashboardLayout({
             )}
           >
             <Activity className="h-4 w-4 mr-2" />
-            执行历史
+            {t("sidebar.history")}
           </Link>
 
           <Link
@@ -92,14 +92,14 @@ export default function DashboardLayout({
             )}
           >
             <Shield className="h-4 w-4 mr-2" />
-            凭证管理
+            {t("sidebar.credentials")}
           </Link>
 
           <Link
             href="/knowledge"
             className={cn(buttonVariants({ variant: pathname === "/knowledge" ? "secondary" : "ghost", size: "sm" }), "w-full justify-start")}
           >
-            <Database className="h-4 w-4 mr-2" />知识库
+            <Database className="h-4 w-4 mr-2" />{t("sidebar.knowledge")}
           </Link>
 
           <Link
