@@ -465,9 +465,9 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
               {((config.auth as string) || "none") === "basic" && (
                 <>
                   <Input value={(config.authUsername as string) || ""} onChange={(e) => updateConfig("authUsername", e.target.value)}
-                    placeholder="用户名" className="text-sm" />
+                    placeholder={t("config.authUsername")} className="text-sm" />
                   <Input type="password" value={(config.authPassword as string) || ""} onChange={(e) => updateConfig("authPassword", e.target.value)}
-                    placeholder="密码" className="text-sm" />
+                    placeholder={t("config.authPassword")} className="text-sm" />
                 </>
               )}
               {((config.auth as string) || "none") === "api_key" && (
@@ -525,19 +525,19 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
       {node.data.type === "merge" && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>汇聚策略</Label>
+            <Label>{t("config.mergeStrategy")}</Label>
             <Select value={(config.strategy as string) || "concat"} onValueChange={(v) => updateConfig("strategy", v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="concat">拼接文本</SelectItem>
-                <SelectItem value="json_array">JSON 数组</SelectItem>
-                <SelectItem value="first">取第一个</SelectItem>
-                <SelectItem value="last">取最后一个</SelectItem>
+                <SelectItem value="concat">{t("config.mergeConcat")}</SelectItem>
+                <SelectItem value="json_array">{t("config.mergeJsonArray")}</SelectItem>
+                <SelectItem value="first">{t("config.mergeFirst")}</SelectItem>
+                <SelectItem value="last">{t("config.mergeLast")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-xs">
-            将多个上游节点的输出按策略汇聚。常用于 IF/ELSE 分支后合并结果。
+            {t("config.mergeHint")}
           </div>
         </div>
       )}
