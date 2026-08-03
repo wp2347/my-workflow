@@ -211,7 +211,7 @@ describe("executeMusicNode", () => {
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ "content-type": "audio/mpeg" }), arrayBuffer: async () => new ArrayBuffer(4) } as unknown as Response)
     const node = makeNode({
       apiUrl: "https://api.example.com/generate", method: "POST", headers: {},
-      bodyTemplate: "{}", auth: "bearer", authToken: "",
+      bodyTemplate: "{}", auth: "bearer", authToken: "ignored-manual",
       credentialId: "cred-1", pollingEnabled: false,
       audioUrlField: "data.audio_url", metadataField: "",
     })

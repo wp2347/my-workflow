@@ -39,14 +39,21 @@ export const executeMusicNode: NodeExecutor = async (node, context) => {
 
   // 凭证优先：credentialId 非空时从数据库读取解密值作为 token
   let effectiveToken = authToken
-  if (credentialId) {
+  let tokenFromCredential = false
+  if (credentialId && (auth === "bearer" || auth === "api_key")) {
     const credValue = await resolveCredentialValue(credentialId)
     if (!credValue) throw new Error(`Credential not found: ${credentialId}`)
     effectiveToken = credValue
+    tokenFromCredential = true
   }
 
-  if (auth === "bearer" && effectiveToken) headers["Authorization"] = `Bearer ${resolveExpression(effectiveToken, context)}`
-  else if (auth === "api_key" && effectiveToken) headers["X-API-Key"] = resolveExpression(effectiveToken, context)
+  if (auth === "bearer" && effectiveToken) {
+    const token = tokenFromCredential ? effectiveToken : resolveExpression(effectiveToken, context)
+    headers["Authorization"] = `Bearer ${token}`
+  } else if (auth === "api_key" && effectiveToken) {
+    const token = tokenFromCredential ? effectiveToken : resolveExpression(effectiveToken, context)
+    headers["X-API-Key"] = token
+  }
 
   const init: RequestInit = { method, headers }
   if (method !== "GET" && body) init.body = body
