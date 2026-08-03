@@ -172,7 +172,7 @@ function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" |
     case "merge":
       return { strategy: "concat" }
     case "cron_trigger":
-      return { name: "定时任务", cronExpr: "0 9 * * *", timezone: "Asia/Shanghai", frequency: "daily" }
+      return { name: "Cron Job", cronExpr: "0 9 * * *", timezone: "Asia/Shanghai", frequency: "daily" }
     case "feishu":
       return { mode: "send", appId: "", appSecret: "", verificationToken: "", webhookUrl: "", message: "", msgType: "text" }
     case "music":
