@@ -238,7 +238,26 @@
     "title": "标题",
     "duration": "时长",
     "style": "风格",
-    "clearFailed": "清空失败，请重试"
+    "clearFailed": "清空失败，请重试",
+    "fields": {
+      "title": "标题",
+      "duration": "时长",
+      "style": "风格",
+      "artist": "艺术家",
+      "album": "专辑",
+      "genre": "流派",
+      "format": "格式",
+      "model": "模型",
+      "lyrics": "歌词",
+      "sample_rate": "采样率",
+      "channels": "声道",
+      "length": "长度",
+      "bitrate": "码率",
+      "music_duration": "时长",
+      "music_sample_rate": "采样率",
+      "music_channel": "声道",
+      "music_size": "文件大小"
+    }
   },
   "templates": {
     "music": {

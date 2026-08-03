@@ -234,7 +234,26 @@
     "title": "Title",
     "duration": "Duration",
     "style": "Style",
-    "clearFailed": "Clear failed, please retry"
+    "clearFailed": "Clear failed, please retry",
+    "fields": {
+      "title": "Title",
+      "duration": "Duration",
+      "style": "Style",
+      "artist": "Artist",
+      "album": "Album",
+      "genre": "Genre",
+      "format": "Format",
+      "model": "Model",
+      "lyrics": "Lyrics",
+      "sample_rate": "Sample Rate",
+      "channels": "Channels",
+      "length": "Length",
+      "bitrate": "Bitrate",
+      "music_duration": "Duration",
+      "music_sample_rate": "Sample Rate",
+      "music_channel": "Channel",
+      "music_size": "File Size"
+    }
   },
   "templates": {
     "music": {
