@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { LocaleSwitcher } from "@/components/LocaleSwitcher"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/i18n"
-import { Workflow, Plus, Home, Activity, Shield, Database, Package } from "lucide-react"
+import { Workflow, Plus, Home, Activity, Shield, Database, Package, LayoutTemplate } from "lucide-react"
 
 export default function DashboardLayout({
   children,
@@ -54,6 +54,17 @@ export default function DashboardLayout({
           >
             <Workflow className="h-4 w-4 mr-2" />
             {t("sidebar.workflows")}
+          </Link>
+
+          <Link
+            href="/templates"
+            className={cn(
+              buttonVariants({ variant: pathname === "/templates" ? "secondary" : "ghost", size: "sm" }),
+              "w-full justify-start",
+            )}
+          >
+            <LayoutTemplate className="h-4 w-4 mr-2" />
+            {t("sidebar.templates")}
           </Link>
 
           <Link

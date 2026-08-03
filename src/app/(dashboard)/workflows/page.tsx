@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,20 +9,15 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useTranslation } from "@/i18n"
 import { getNextRunTime } from "@/lib/cron-helper"
-import { Workflow, Plus, ArrowRight, Loader2, Trash2, Music } from "lucide-react"
+import { Workflow, Plus, ArrowRight, Loader2, Trash2 } from "lucide-react"
 import type { WorkflowConfig } from "@/types/workflow"
 
 export default function WorkflowsPage() {
   const { t } = useTranslation()
-  const router = useRouter()
   const [workflows, setWorkflows] = useState<(WorkflowConfig & { enabled?: boolean; schedule?: string | null })[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<WorkflowConfig | null>(null)
   const [deleting, setDeleting] = useState(false)
-
-  const handleCreateFromMusicTemplate = () => {
-    router.push("/workflow/new?template=music")
-  }
 
   const fetchWorkflows = useCallback(() => {
     setLoading(true)
@@ -62,14 +56,9 @@ export default function WorkflowsPage() {
           <h1 className="text-2xl font-bold">{t("workflows.title")}</h1>
           <p className="text-muted-foreground mt-1">{t("workflows.description")}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/workflow/new">
-            <Button><Plus className="h-4 w-4 mr-2" />{t("workflows.newWorkflow")}</Button>
-          </Link>
-          <Button variant="outline" onClick={handleCreateFromMusicTemplate}>
-            <Music className="h-4 w-4 mr-2" />{t("workflows.musicTemplate")}
-          </Button>
-        </div>
+        <Link href="/workflow/new">
+          <Button><Plus className="h-4 w-4 mr-2" />{t("workflows.newWorkflow")}</Button>
+        </Link>
       </div>
 
       {loading ? (
