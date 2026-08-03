@@ -23,13 +23,13 @@ export default function WorkflowEditorPage() {
 
   useEffect(() => {
     if (isNew) {
-      const params = new URLSearchParams(window.location.search)
-      const template = params.get("template")
+      const searchParams = new URLSearchParams(window.location.search)
+      const templateId = searchParams.get("template")
 
-      if (template === "music") {
+      if (templateId) {
         const lang = localStorage.getItem("workflow-locale") || "zh"
-        fetch(`/api/workflow/template/music?lang=${lang}`)
-          .then((r) => r.json())
+        fetch(`/api/templates/${templateId}?lang=${lang}`)
+          .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`template ${templateId} not found`))))
           .then((tpl) => {
             setWorkflow(
               { id: "", name: tpl.name, description: tpl.description, config: {}, createdAt: "", updatedAt: "" },
