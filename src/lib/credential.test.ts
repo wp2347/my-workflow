@@ -14,7 +14,7 @@ vi.mock("@/lib/crypto", () => ({
 }))
 
 describe("resolveCredentialValue", () => {
-  beforeEach(() => { vi.clearAllMocks() })
+  beforeEach(() => { vi.resetAllMocks() })
 
   it("credentialId 为空返回 null（不查询数据库）", async () => {
     const res = await resolveCredentialValue("")

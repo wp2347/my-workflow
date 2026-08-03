@@ -5,7 +5,7 @@ import { decrypt } from "@/lib/crypto"
  * 按凭证 ID 读取解密后的值。
  * - credentialId 为空 → 返回 null（不查库）
  * - 凭证不存在 → 返回 null（调用方决定如何处理）
- * - 凭证存在 → 解密返回明文值
+ * - 凭证存在 → 解密返回明文值；若存储值损坏，decrypt 抛错向上传播（视为真实错误）
  */
 export async function resolveCredentialValue(credentialId?: string | null): Promise<string | null> {
   if (!credentialId) return null
