@@ -150,7 +150,7 @@ export function MusicPlayer({ audioUrl, fileName, compact = false, className }: 
               {equalizerBars.map((_, i) => (
                 <span
                   key={i}
-                  className="w-[3px] rounded-full bg-purple-600 animate-equalizer"
+                  className="w-[3px] rounded-full bg-node-music animate-equalizer"
                   style={{ height: `${4 + i * 2}px`, animationDelay: `${i * 0.12}s` }}
                 />
               ))}
@@ -181,9 +181,9 @@ export function MusicPlayer({ audioUrl, fileName, compact = false, className }: 
             aria-label={t("audioResult.seek")}
             className={cn(
               "mt-1.5 w-full cursor-pointer appearance-none rounded-full",
-              "h-1.5 bg-purple-100 dark:bg-purple-950",
+              "h-1.5 bg-node-music-bg",
               "disabled:opacity-50",
-              "[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-600 [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white",
+              "[&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-node-music [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-white",
             )}
             style={{
               backgroundImage: duration > 0

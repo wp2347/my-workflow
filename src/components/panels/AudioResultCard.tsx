@@ -44,9 +44,9 @@ export function AudioResultCard({ executionId, nodeId, audioUrl, fileName, metad
   return (
     <div className="mt-3 space-y-3">
       <Card className="overflow-hidden">
-        <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-purple-50 to-transparent px-3 py-2 dark:from-purple-950/40">
-          <div className="rounded-md bg-purple-100 p-1 dark:bg-purple-900/60">
-            <Music className="h-3.5 w-3.5 text-purple-600" />
+        <div className="flex items-center gap-2 border-b border-border bg-gradient-to-r from-node-music-bg/50 to-transparent px-3 py-2">
+          <div className="rounded-md bg-node-music-bg p-1">
+            <Music className="h-3.5 w-3.5 text-node-music" />
           </div>
           <span className="text-xs font-semibold text-foreground">{t("audioResult.preview")}</span>
         </div>

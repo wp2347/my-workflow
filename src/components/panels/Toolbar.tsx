@@ -207,7 +207,7 @@ export function Toolbar() {
             <DialogTitle>{t("toolbar.runResultTitle")}</DialogTitle>
           </DialogHeader>
           {runAudio && (
-            <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50/60 to-transparent p-3 dark:border-purple-800/40 dark:from-purple-950/30">
+            <div className="rounded-xl border border-node-music-bg bg-node-music-bg/40 p-3">
               <MusicPlayer audioUrl={runAudio.audioUrl} fileName={runAudio.fileName} />
             </div>
           )}

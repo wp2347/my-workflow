@@ -254,7 +254,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
             <>
               <div className="space-y-2">
                 <Label>{t("config.outputResult")}</Label>
-                <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50/60 to-transparent p-3 dark:border-purple-800/40 dark:from-purple-950/30">
+                <div className="rounded-xl border border-node-music-bg bg-node-music-bg/40 p-3">
                   <MusicPlayer audioUrl={runResult.audioUrl} fileName={runResult.fileName} />
                 </div>
                 <div className="flex items-center gap-2">
@@ -557,7 +557,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
             <Input value={(config.right as string) || ""} onChange={(e) => updateConfig("right", e.target.value)}
               placeholder="Beijing" className="text-sm font-mono" />
           </div>
-          <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950 text-xs space-y-1">
+          <div className="p-3 rounded-lg bg-warning/10 dark:bg-warning/20 text-xs space-y-1">
             <p className="font-semibold">{t("config.conditionHintTrue")}</p>
             <p className="font-semibold">{t("config.conditionHintFalse")}</p>
             <p className="text-muted-foreground mt-1">{t("config.conditionHintDesc")}</p>
@@ -580,7 +580,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
               </SelectContent>
             </Select>
           </div>
-          <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-xs">
+          <div className="p-3 rounded-lg bg-node-merge-bg text-xs">
             {t("config.mergeHint")}
           </div>
         </div>
@@ -657,7 +657,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
               </div>
             )
           })()}
-          <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950 text-xs text-muted-foreground">
+          <div className="p-3 rounded-lg bg-node-cron-bg text-xs text-muted-foreground">
             {t("config.cronHint")}
           </div>
         </div>
