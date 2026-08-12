@@ -124,7 +124,7 @@ export default function DashboardLayout({
           </Link>
         </nav>
 
-        <div className="p-3 border-t border-border flex items-center justify-between">
+        <div className="px-3 py-3 border-t border-border flex items-center justify-between">
           <div className="text-xs text-muted-foreground">{t("app.version")}</div>
           <LocaleSwitcher />
         </div>
