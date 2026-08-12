@@ -71,7 +71,7 @@ export default function KnowledgePage() {
               <Card key={d.id} className="group">
                 <CardHeader className="flex flex-row items-center justify-between py-3">
                   <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-blue-500" />
+                    <FileText className="h-5 w-5 text-info" />
                     <div>
                       <CardTitle className="text-sm">{d.name}</CardTitle>
                       <CardDescription>{t("knowledge.chunks", { count: d._count?.chunks || 0, type: d.type })}</CardDescription>
@@ -80,7 +80,7 @@ export default function KnowledgePage() {
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary" className="text-xs">{t("knowledge.chunkSize", { size: d.chunkSize })}</Badge>
                     <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => handleDelete(d.id)}>
-                      <Trash2 className="h-4 w-4 text-red-500" /></Button>
+                      <Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 </CardHeader>
               </Card>

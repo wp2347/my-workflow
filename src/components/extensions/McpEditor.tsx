@@ -178,11 +178,11 @@ export function McpEditor({ open, onOpenChange, mcpId, onSaved }: McpEditorProps
   }
 
   const statusColor: Record<string, string> = {
-    online: "text-green-500",
-    offline: "text-gray-400",
-    error: "text-red-500",
-    untested: "text-yellow-500",
-    checking: "text-blue-500",
+    online: "text-success",
+    offline: "text-muted-foreground",
+    error: "text-destructive",
+    untested: "text-warning",
+    checking: "text-info",
   }
 
   return (
@@ -295,7 +295,7 @@ export function McpEditor({ open, onOpenChange, mcpId, onSaved }: McpEditorProps
                     className="font-mono text-sm"
                   />
                 </div>
-                <p className="text-xs text-yellow-600">{t("extensions.mcp.stdioWarning")}</p>
+                <p className="text-xs text-warning">{t("extensions.mcp.stdioWarning")}</p>
               </div>
             )}
 

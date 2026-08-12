@@ -97,7 +97,7 @@ export default function CredentialsPage() {
               <CardHeader className="py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Key className="h-5 w-5 text-yellow-500 flex-shrink-0" />
+                    <Key className="h-5 w-5 text-warning flex-shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold">{c.name}</span>
@@ -113,7 +113,7 @@ export default function CredentialsPage() {
                           ? revealed[c.id]
                           : `••••••••••••••••••••••••••••••••••••••••`}
                       </code>
-                      {copied[c.id] && <span className="text-[10px] text-green-500 ml-1">{t("credentials.copied")}</span>}
+                      {copied[c.id] && <span className="text-[10px] text-success ml-1">{t("credentials.copied")}</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">

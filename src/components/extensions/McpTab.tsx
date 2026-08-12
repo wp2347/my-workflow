@@ -37,11 +37,11 @@ export function McpTab({ onEdit, onRefresh }: McpTabProps) {
   if (mcpServers.length === 0) return <div className="text-muted-foreground text-sm">{t("extensions.common.noData")}</div>
 
   const statusColor: Record<string, string> = {
-    online: "text-green-500",
-    offline: "text-gray-400",
-    error: "text-red-500",
-    untested: "text-yellow-500",
-    checking: "text-blue-500",
+    online: "text-success",
+    offline: "text-muted-foreground",
+    error: "text-destructive",
+    untested: "text-warning",
+    checking: "text-info",
   }
 
   const statusLabel: Record<string, string> = {

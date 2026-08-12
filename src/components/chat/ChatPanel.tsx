@@ -113,9 +113,9 @@ export function ChatPanel({ workflowId }: ChatPanelProps) {
               {executionNodes.map((node) => (
                 <div key={node.nodeId} className="flex items-center gap-2 text-xs">
                   <Badge variant="outline" className={
-                    node.status === "completed" ? "border-green-400 text-green-600" :
-                    node.status === "failed" ? "border-red-400 text-red-600" :
-                    node.status === "running" ? "border-blue-400 text-blue-600" : ""
+                    node.status === "completed" ? "border-success/40 text-success" :
+                    node.status === "failed" ? "border-destructive/40 text-destructive" :
+                    node.status === "running" ? "border-info/40 text-info" : ""
                   }>
                     {t(`execution.${node.status}` as Parameters<typeof t>[0])}
                   </Badge>

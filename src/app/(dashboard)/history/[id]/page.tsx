@@ -52,14 +52,14 @@ export default function ExecutionDetailPage() {
       <ScrollArea className="h-[calc(100vh-160px)]">
         <div className="space-y-3 pr-4">
           {logs.map((log, i) => (
-            <Card key={i} className={log.status === "failed" ? "border-red-200" : "border-green-200"}>
+            <Card key={i} className={log.status === "failed" ? "border-destructive/30" : "border-success/30"}>
               <CardHeader className="py-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {log.status === "completed" ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <CheckCircle className="h-4 w-4 text-success" />
                     ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
+                      <XCircle className="h-4 w-4 text-destructive" />
                     )}
                     <CardTitle className="text-sm">
                       {log.nodeType as string} <span className="text-xs text-muted-foreground">({log.nodeId as string})</span>
@@ -74,7 +74,7 @@ export default function ExecutionDetailPage() {
                 </div>
 
                 {Boolean(log.error) && (
-                  <div className="mt-2 p-2 rounded bg-red-50 dark:bg-red-950 text-xs text-red-600 font-mono">
+                  <div className="mt-2 p-2 rounded bg-destructive/10 dark:bg-destructive/20 text-xs text-destructive font-mono">
                     {String(log.error).substring(0, 200)}
                   </div>
                 )}

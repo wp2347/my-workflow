@@ -78,11 +78,11 @@ export default function HistoryPage() {
                   <CardHeader className="flex flex-row items-center justify-between py-3">
                     <div className="flex items-center gap-3">
                       {ex.status === "completed" ? (
-                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                        <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
                       ) : ex.status === "failed" ? (
-                        <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
+                        <XCircle className="h-5 w-5 text-destructive flex-shrink-0" />
                       ) : (
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500 flex-shrink-0" />
+                        <Loader2 className="h-5 w-5 animate-spin text-info flex-shrink-0" />
                       )}
                       <div className="min-w-0">
                         <CardTitle className="text-sm truncate">{ex.workflowName}</CardTitle>
@@ -93,7 +93,7 @@ export default function HistoryPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {ex.error && (
-                        <span className="text-xs text-red-500 truncate max-w-[120px] hidden sm:inline">
+                        <span className="text-xs text-destructive truncate max-w-[120px] hidden sm:inline">
                           {ex.error.substring(0, 40)}
                         </span>
                       )}
