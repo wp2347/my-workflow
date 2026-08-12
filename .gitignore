@@ -45,3 +45,6 @@ storage/
 
 # git worktrees
 .worktrees/
+
+# brainstorming visual companion session
+.superpowers/
