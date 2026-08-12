@@ -1,11 +1,4 @@
-export interface TemplateNode {
-  id: string
-  type: string
-  position: { x: number; y: number }
-  data: { type: string; label: string; config: Record<string, unknown> }
-}
-export interface TemplateEdge { id: string; source: string; target: string }
-export interface Template { name: string; description: string; nodes: TemplateNode[]; edges: TemplateEdge[] }
+import type { Template, TemplateNode, TemplateEdge } from "../types"
 
 const I18N = {
   zh: {

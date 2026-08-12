@@ -9,6 +9,7 @@ import { ConfigPanel } from "@/components/canvas/ConfigPanel"
 import { Toolbar } from "@/components/panels/Toolbar"
 import { Loader2 } from "lucide-react"
 import { useTranslation } from "@/i18n"
+import type { NodeType, WorkflowNode, WorkflowEdge } from "@/types/workflow"
 
 export default function WorkflowEditorPage() {
   const params = useParams()
@@ -33,15 +34,59 @@ export default function WorkflowEditorPage() {
         fetch(`/api/templates/${templateId}?lang=${lang}`)
           .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`template ${templateId} not found`))))
           .then((tpl) => {
+            // 节点 ID 在数据库中全局唯一，为模板生成的节点/边添加前缀避免冲突
+            const prefix = `t_${Date.now().toString(36)}_`
+            const idMap = new Map<string, string>()
+            const rawNodes = tpl.nodes as Array<{
+              id: string
+              type: NodeType
+              position: { x: number; y: number }
+              data: WorkflowNode["data"]
+            }>
+            for (const n of rawNodes) {
+              idMap.set(n.id, `${prefix}${n.id}`)
+            }
+            const rewriteIds = (value: unknown): unknown => {
+              if (typeof value === "string") {
+                let out = value
+                for (const [oldId, newId] of idMap) {
+                  out = out.replace(new RegExp(`\\{\\{\\s*${oldId}\\.`, "g"), `{{ ${newId}.`)
+                }
+                return out
+              }
+              if (Array.isArray(value)) return value.map(rewriteIds)
+              if (value && typeof value === "object") {
+                const obj: Record<string, unknown> = {}
+                for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+                  obj[k] = rewriteIds(v)
+                }
+                return obj
+              }
+              return value
+            }
+            const nodes: WorkflowNode[] = rawNodes.map((n) => ({
+              id: idMap.get(n.id) || n.id,
+              type: n.type,
+              position: n.position,
+              data: rewriteIds(n.data) as WorkflowNode["data"],
+            }))
+            const edges: WorkflowEdge[] = (tpl.edges as Array<{
+              id: string
+              source: string
+              target: string
+              sourceHandle?: string | null
+              targetHandle?: string | null
+            }>).map((e) => ({
+              id: `${prefix}${e.id}`,
+              source: idMap.get(e.source) || e.source,
+              target: idMap.get(e.target) || e.target,
+              sourceHandle: e.sourceHandle || undefined,
+              targetHandle: e.targetHandle || undefined,
+            }))
             setWorkflow(
               { id: "", name: tpl.name, description: tpl.description, config: {}, createdAt: "", updatedAt: "" },
-              tpl.nodes.map((n: {
-                id: string
-                type: string
-                position: { x: number; y: number }
-                data: Record<string, unknown>
-              }) => ({ id: n.id, type: n.type, position: n.position, data: n.data })),
-              tpl.edges.map((e: { id: string; source: string; target: string }) => ({ id: e.id, source: e.source, target: e.target })),
+              nodes,
+              edges,
             )
             setWorkflowId(null)
           })
