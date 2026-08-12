@@ -2,12 +2,14 @@
 
 import { useRouter } from "next/navigation"
 import { useWorkflowStore } from "@/stores/workflow"
+import { useRunResultsStore } from "@/stores/runResults"
 import { useTranslation } from "@/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { MusicPlayer } from "@/components/music/MusicPlayer"
 import { Save, Play, ArrowLeft, Loader2, Zap, Webhook } from "lucide-react"
 import { useState } from "react"
 
@@ -15,9 +17,11 @@ export function Toolbar() {
   const router = useRouter()
   const { t } = useTranslation()
   const { workflowId, workflowName, setWorkflowName, nodes, edges, isDirty, markClean } = useWorkflowStore()
+  const setNodeResult = useRunResultsStore((s) => s.setNodeResult)
   const [saving, setSaving] = useState(false)
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState<string | null>(null)
+  const [runAudio, setRunAudio] = useState<{ audioUrl: string; fileName: string } | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [showWebhook, setShowWebhook] = useState(false)
   const [webhookUrl, setWebhookUrl] = useState("")
@@ -51,6 +55,7 @@ export function Toolbar() {
     if (!workflowId) return
     setRunning(true)
     setRunResult(null)
+    setRunAudio(null)
     try {
       // Get workflow to read notifyChatId
       const wfRes = await fetch(`/api/workflow/${workflowId}`)
@@ -63,6 +68,29 @@ export function Toolbar() {
         body: JSON.stringify({ workflowId, input: { message: "manual-test", chatId } }),
       })
       const data = await res.json()
+
+      // 将 output 节点的音频结果写入持久化 store（下次执行时自动覆盖）
+      let foundAudio: { audioUrl: string; fileName: string } | null = null
+      for (const log of data.logs || []) {
+        const out = log.output as Record<string, unknown> | null
+        if (out && typeof out === "object" && typeof out.audioUrl === "string") {
+          setNodeResult(workflowId, log.nodeId, {
+            audioUrl: out.audioUrl as string,
+            fileName: (out.fileName as string) || "audio",
+            metadata: (out.metadata as Record<string, unknown>) || {},
+            executionId: data.executionId,
+            status: data.status,
+            updatedAt: new Date().toISOString(),
+          })
+          if (!foundAudio) {
+            foundAudio = {
+              audioUrl: out.audioUrl as string,
+              fileName: (out.fileName as string) || "audio",
+            }
+          }
+        }
+      }
+      setRunAudio(foundAudio)
 
       const lines: string[] = []
       lines.push(t("toolbar.status", { status: data.status }))
@@ -178,6 +206,11 @@ export function Toolbar() {
           <DialogHeader>
             <DialogTitle>{t("toolbar.runResultTitle")}</DialogTitle>
           </DialogHeader>
+          {runAudio && (
+            <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50/60 to-transparent p-3 dark:border-purple-800/40 dark:from-purple-950/30">
+              <MusicPlayer audioUrl={runAudio.audioUrl} fileName={runAudio.fileName} />
+            </div>
+          )}
           <ScrollArea className="max-h-[60vh]">
             <pre className="text-xs whitespace-pre-wrap break-all font-mono">{runResult}</pre>
           </ScrollArea>

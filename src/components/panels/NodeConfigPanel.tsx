@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useWorkflowStore } from "@/stores/workflow"
+import { useRunResultsStore } from "@/stores/runResults"
 import type { WorkflowNode, ExtensionBindings } from "@/types/workflow"
 import { PROVIDERS } from "@/lib/providers"
 import { useTranslation } from "@/i18n"
@@ -13,15 +14,19 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, ExternalLink, Eye, EyeOff, Package } from "lucide-react"
+import { Trash2, ExternalLink, Eye, EyeOff, Package, Download } from "lucide-react"
 import { ExtensionPicker } from "@/components/extensions/ExtensionPicker"
 import { CredentialSelect } from "@/components/panels/CredentialSelect"
+import { MusicPlayer } from "@/components/music/MusicPlayer"
 
 interface NodeConfigPanelProps { node: WorkflowNode }
 
 export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   const { t } = useTranslation()
-  const { updateNodeData, removeNode, setSelectedNodeId } = useWorkflowStore()
+  const { updateNodeData, removeNode, setSelectedNodeId, workflowId } = useWorkflowStore()
+  const runResult = useRunResultsStore((s) => (workflowId && s.results[workflowId]?.[node.id]) || null)
+  const hydrate = useRunResultsStore((s) => s.hydrate)
+  const clearNodeResult = useRunResultsStore((s) => s.clearNodeResult)
   const config = (node.data.config as Record<string, unknown>) || {}
   const [showApiKey, setShowApiKey] = useState(false)
   const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([])
@@ -53,6 +58,10 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   useEffect(() => {
     fetch("/api/documents").then(r => r.json()).then(setDocuments).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (workflowId) hydrate(workflowId)
+  }, [workflowId, hydrate])
 
   // Reset cron state when node changes
   useEffect(() => {
@@ -241,6 +250,41 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
       {/* ===== OUTPUT NODE ===== */}
       {node.data.type === "output" && (
         <div className="space-y-4">
+          {runResult && (
+            <>
+              <div className="space-y-2">
+                <Label>{t("config.outputResult")}</Label>
+                <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50/60 to-transparent p-3 dark:border-purple-800/40 dark:from-purple-950/30">
+                  <MusicPlayer audioUrl={runResult.audioUrl} fileName={runResult.fileName} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <a href={runResult.audioUrl} download={runResult.fileName}>
+                    <Button variant="outline" size="sm"><Download className="h-3.5 w-3.5 mr-1" />{t("audioResult.download")}</Button>
+                  </a>
+                  <Button variant="ghost" size="sm" onClick={() => clearNodeResult(workflowId!, node.id)}>
+                    {t("audioResult.clear")}
+                  </Button>
+                </div>
+                {Object.keys(runResult.metadata || {}).length > 0 && (
+                  <div className="mt-2 rounded-lg border border-border/60 bg-background/60 p-2">
+                    <div className="mb-1 text-[11px] font-semibold text-foreground">{t("audioResult.metadata")}</div>
+                    <dl className="text-[11px] space-y-0.5">
+                      {Object.entries(runResult.metadata).map(([k, v]) => {
+                        const label = t(`audioResult.fields.${k}`)
+                        return (
+                          <div key={k} className="flex gap-2">
+                            <dt className="text-muted-foreground min-w-[60px] truncate">{label === `audioResult.fields.${k}` ? k : label}</dt>
+                            <dd className="text-foreground break-all">{String(v)}</dd>
+                          </div>
+                        )
+                      })}
+                    </dl>
+                  </div>
+                )}
+              </div>
+              <Separator />
+            </>
+          )}
           <div className="space-y-2">
             <Label>{t("config.format")}</Label>
             <Select value={(config.format as string) || "text"} onValueChange={(v) => updateConfig("format", v)}>
