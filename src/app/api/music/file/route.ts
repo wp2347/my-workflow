@@ -65,12 +65,43 @@ export async function GET(req: NextRequest) {
   try {
     const buf = await fs.readFile(found.filePath)
     const fileName = path.basename(found.filePath)
+    const total = buf.length
+
+    // 支持 Range 请求（音频流式播放 / seek 必需）
+    const range = req.headers.get("range")
+    if (range) {
+      const match = /bytes=(\d*)-(\d*)/.exec(range)
+      if (match) {
+        let start = match[1] ? parseInt(match[1], 10) : 0
+        let end = match[2] ? parseInt(match[2], 10) : total - 1
+        if (isNaN(start)) start = 0
+        if (isNaN(end) || end >= total) end = total - 1
+        if (start > end || start >= total) {
+          return new NextResponse(null, {
+            status: 416,
+            headers: { "Content-Range": `bytes */${total}` },
+          })
+        }
+        const chunk = buf.subarray(start, end + 1)
+        return new NextResponse(new Uint8Array(chunk), {
+          status: 206,
+          headers: {
+            "Content-Type": mimeForExt(found.ext),
+            "Accept-Ranges": "bytes",
+            "Content-Range": `bytes ${start}-${end}/${total}`,
+            "Content-Length": String(chunk.length),
+          },
+        })
+      }
+    }
+
     return new NextResponse(new Uint8Array(buf), {
       status: 200,
       headers: {
         "Content-Type": mimeForExt(found.ext),
-        "Content-Disposition": `attachment; filename="${fileName}"`,
-        "Content-Length": String(buf.length),
+        "Accept-Ranges": "bytes",
+        "Content-Disposition": `inline; filename="${fileName}"`,
+        "Content-Length": String(total),
       },
     })
   } catch (error) {
