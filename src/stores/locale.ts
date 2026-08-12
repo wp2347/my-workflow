@@ -6,6 +6,8 @@ export type Locale = "en" | "zh"
 
 interface LocaleStore {
   locale: Locale
+  hydrated: boolean
+  hydrateLocale: () => void
   setLocale: (locale: Locale) => void
   t: (key: string, params?: Record<string, string | number>) => string
 }
@@ -32,6 +34,18 @@ function interpolate(template: string, params?: Record<string, string | number>)
 
 export const useLocaleStore = create<LocaleStore>((set, get) => ({
   locale: "zh",
+  hydrated: false,
+
+  // 在组件挂载后调用，避免 SSR/客户端水合不匹配
+  hydrateLocale: () => {
+    if (get().hydrated) return
+    if (typeof window === "undefined") return
+    const stored = localStorage.getItem("workflow-locale") as Locale | null
+    if (stored === "en" || stored === "zh") {
+      set({ locale: stored })
+    }
+    set({ hydrated: true })
+  },
 
   setLocale: (locale: Locale) => {
     set({ locale })
@@ -48,10 +62,3 @@ export const useLocaleStore = create<LocaleStore>((set, get) => ({
     return fallback ? interpolate(fallback, params) : key
   },
 }))
-
-if (typeof window !== "undefined") {
-  const stored = localStorage.getItem("workflow-locale") as Locale | null
-  if (stored === "en" || stored === "zh") {
-    useLocaleStore.setState({ locale: stored })
-  }
-}

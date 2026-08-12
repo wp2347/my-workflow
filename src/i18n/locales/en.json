@@ -59,6 +59,10 @@
     "httpDesc": "Call external API endpoints",
     "condition": "Condition",
     "conditionDesc": "IF/ELSE branch logic",
+    "merge": "Merge",
+    "mergeDesc": "Combine multiple branch results",
+    "cronTrigger": "Scheduled Trigger",
+    "cronTriggerDesc": "Cron expression scheduled workflow execution",
     "music": "Music Generation",
     "musicDesc": "Call music generation API to produce audio",
     "dragTips": {
@@ -91,6 +95,7 @@
     "format": "Format",
     "template": "Template",
     "templatePlaceholder": "Use {{nodeId}} to reference node outputs",
+    "outputResult": "Run result",
     "customModel": "--- Type custom model ID ---",
     "customModelPlaceholder": "Enter model ID, e.g. deepseek-v4-pro",
     "modelsAvailable": "{count} models listed. Select \"Custom\" to type any ID.",
@@ -239,10 +244,16 @@
     "clearing": "Clearing…",
     "cleared": "Cleared",
     "noMetadata": "No metadata",
+    "metadata": "Metadata",
     "title": "Title",
     "duration": "Duration",
     "style": "Style",
     "clearFailed": "Clear failed, please retry",
+    "play": "Play",
+    "pause": "Pause",
+    "seek": "Seek",
+    "unavailable": "Audio unavailable",
+    "retry": "Retry",
     "fields": {
       "title": "Title",
       "duration": "Duration",
@@ -264,21 +275,36 @@
     }
   },
   "templates": {
-    "music": {
-      "name": "Music Generation Template",
-      "description": "Generate music from a prompt and export it",
-      "labelInput": "Prompt",
-      "labelMusic": "Music Generation",
-      "labelOutput": "Export"
-    },
     "title": "Templates",
     "description": "Choose a preset template to quickly create a workflow",
     "useTemplate": "Use template",
     "noTemplates": "No templates available",
     "category": {
-      "music": "Music"
+      "music": "Music",
+      "llm": "LLM Apps",
+      "automation": "Automation"
     },
     "list": {
+      "dailyBrief": {
+        "name": "Daily News Brief",
+        "description": "Fetch trending news on schedule, summarize with AI, push to Feishu"
+      },
+      "llmApps": {
+        "name": "AI Translation Assistant",
+        "description": "Input any text and get AI-powered translation"
+      },
+      "modelCompare": {
+        "name": "Multi-Model Comparison",
+        "description": "Send the same question to two AI models and compare answers"
+      },
+      "supportRouting": {
+        "name": "Smart Support Routing",
+        "description": "Route questions by intent: technical issues to tech support, others to general reply"
+      },
+      "reminder": {
+        "name": "Scheduled Reminder",
+        "description": "Send a Feishu reminder message on a schedule"
+      },
       "music": {
         "name": "Music Generation Template",
         "description": "Generate music from a prompt and export it"
