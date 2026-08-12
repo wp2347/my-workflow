@@ -121,7 +121,7 @@ function CanvasInner() {
         edges={edges.map((e) => ({
           ...e,
           markerEnd: { type: MarkerType.ArrowClosed },
-          style: { strokeWidth: 2, stroke: "#94a3b8" },
+          style: { strokeWidth: 2, stroke: "var(--canvas-edge)" },
         })) as unknown as Edge[]}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -137,7 +137,7 @@ function CanvasInner() {
           animated: true,
         }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--canvas-dot)" />
         <Controls />
         <MiniMap
           nodeStrokeWidth={3}
