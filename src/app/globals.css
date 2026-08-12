@@ -39,6 +39,29 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-node-input: var(--node-input);
+  --color-node-input-bg: var(--node-input-bg);
+  --color-node-llm: var(--node-llm);
+  --color-node-llm-bg: var(--node-llm-bg);
+  --color-node-output: var(--node-output);
+  --color-node-output-bg: var(--node-output-bg);
+  --color-node-feishu: var(--node-feishu);
+  --color-node-feishu-bg: var(--node-feishu-bg);
+  --color-node-http: var(--node-http);
+  --color-node-http-bg: var(--node-http-bg);
+  --color-node-condition: var(--node-condition);
+  --color-node-condition-bg: var(--node-condition-bg);
+  --color-node-merge: var(--node-merge);
+  --color-node-merge-bg: var(--node-merge-bg);
+  --color-node-cron: var(--node-cron);
+  --color-node-cron-bg: var(--node-cron-bg);
+  --color-node-music: var(--node-music);
+  --color-node-music-bg: var(--node-music-bg);
+  --color-canvas-dot: var(--canvas-dot);
+  --color-canvas-edge: var(--canvas-edge);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -49,72 +72,126 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #faf9fb;
+  --foreground: #21192f;
+  --card: #ffffff;
+  --card-foreground: #21192f;
+  --popover: #ffffff;
+  --popover-foreground: #21192f;
+  --primary: #6d5bd0;
+  --primary-foreground: #ffffff;
+  --secondary: #f0edf8;
+  --secondary-foreground: #21192f;
+  --muted: #f3f0f9;
+  --muted-foreground: #6f6781;
+  --accent: #f0edf8;
+  --accent-foreground: #21192f;
+  --destructive: #c2414c;
+  --border: #e7e3f0;
+  --input: #d9d3e8;
+  --ring: #b3a6e8;
+  --chart-1: #6d5bd0;
+  --chart-2: #4f946e;
+  --chart-3: #b07a2d;
+  --chart-4: #3b74d0;
+  --chart-5: #c2557e;
+  --radius: 0.75rem;
+  --sidebar: #fdfcfe;
+  --sidebar-foreground: #21192f;
+  --sidebar-primary: #6d5bd0;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f0edf8;
+  --sidebar-accent-foreground: #21192f;
+  --sidebar-border: #e7e3f0;
+  --sidebar-ring: #b3a6e8;
+  /* 状态色（低饱和） */
+  --success: #4f946e;
+  --warning: #b07a2d;
+  --info: #3b74d0;
+  /* 节点色调 */
+  --node-input: #3b74d0;
+  --node-input-bg: #eaf1fd;
+  --node-llm: #6d5bd0;
+  --node-llm-bg: #f1edfb;
+  --node-output: #4f946e;
+  --node-output-bg: #ecf7f1;
+  --node-feishu: #2f9eb2;
+  --node-feishu-bg: #e6f5f8;
+  --node-http: #64748b;
+  --node-http-bg: #eef1f5;
+  --node-condition: #b07a2d;
+  --node-condition-bg: #fbf3e4;
+  --node-merge: #7c5aa8;
+  --node-merge-bg: #f3edf9;
+  --node-cron: #2e9d8b;
+  --node-cron-bg: #e6f5f2;
+  --node-music: #c2557e;
+  --node-music-bg: #fbeef4;
+  /* 画布 */
+  --canvas-dot: #c4bedd;
+  --canvas-edge: #b3a6e8;
+  /* 阴影 */
+  --shadow-soft: 0 1px 2px rgb(31 27 41 / 4%);
+  --shadow-float: 0 8px 28px rgb(31 27 41 / 12%), 0 2px 8px rgb(31 27 41 / 6%);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #16131d;
+  --foreground: #e9e6f2;
+  --card: #1e1a28;
+  --card-foreground: #e9e6f2;
+  --popover: #221d30;
+  --popover-foreground: #e9e6f2;
+  --primary: #a99de8;
+  --primary-foreground: #1a1425;
+  --secondary: #2a2436;
+  --secondary-foreground: #e9e6f2;
+  --muted: #282232;
+  --muted-foreground: #9b94a8;
+  --accent: #2a2436;
+  --accent-foreground: #e9e6f2;
+  --destructive: #e58a92;
+  --border: rgb(255 255 255 / 8%);
+  --input: rgb(255 255 255 / 12%);
+  --ring: rgb(169 157 232 / 40%);
+  --chart-1: #a99de8;
+  --chart-2: #7cbb97;
+  --chart-3: #d0a25e;
+  --chart-4: #7aa5e8;
+  --chart-5: #d486a6;
+  --sidebar: #1e1a28;
+  --sidebar-foreground: #e9e6f2;
+  --sidebar-primary: #a99de8;
+  --sidebar-primary-foreground: #1a1425;
+  --sidebar-accent: #2a2436;
+  --sidebar-accent-foreground: #e9e6f2;
+  --sidebar-border: rgb(255 255 255 / 8%);
+  --sidebar-ring: rgb(169 157 232 / 40%);
+  --success: #7cbb97;
+  --warning: #d0a25e;
+  --info: #7aa5e8;
+  --node-input: #7aa5e8;
+  --node-input-bg: rgb(58 87 140 / 25%);
+  --node-llm: #a99de8;
+  --node-llm-bg: rgb(93 74 190 / 25%);
+  --node-output: #7cbb97;
+  --node-output-bg: rgb(66 138 96 / 25%);
+  --node-feishu: #6cc3d4;
+  --node-feishu-bg: rgb(45 130 145 / 25%);
+  --node-http: #93a0b6;
+  --node-http-bg: rgb(90 103 130 / 25%);
+  --node-condition: #d0a25e;
+  --node-condition-bg: rgb(150 110 45 / 25%);
+  --node-merge: #9f7ec9;
+  --node-merge-bg: rgb(106 76 150 / 25%);
+  --node-cron: #5fbfab;
+  --node-cron-bg: rgb(46 145 128 / 25%);
+  --node-music: #d486a6;
+  --node-music-bg: rgb(150 70 105 / 25%);
+  --canvas-dot: rgb(196 190 221 / 18%);
+  --canvas-edge: #8f81d9;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-float: 0 8px 28px rgb(0 0 0 / 40%), 0 2px 8px rgb(0 0 0 / 25%);
 }
 
 @layer base {
@@ -129,6 +206,14 @@
   }
 }
 
+@utility shadow-soft {
+  box-shadow: var(--shadow-soft);
+}
+
+@utility shadow-float {
+  box-shadow: var(--shadow-float);
+}
+
 @keyframes equalizer-bounce {
   0%, 100% { transform: scaleY(0.35); }
   50% { transform: scaleY(1); }
@@ -137,4 +222,40 @@
 .animate-equalizer {
   transform-origin: bottom;
   animation: equalizer-bounce 0.9s ease-in-out infinite;
+}
+
+.react-flow__background {
+  background-color: var(--background);
+}
+.react-flow__background pattern circle {
+  fill: var(--canvas-dot);
+}
+.react-flow__edge-path {
+  stroke: var(--canvas-edge);
+  stroke-width: 2;
+}
+.react-flow__controls {
+  box-shadow: var(--shadow-soft);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--popover);
+}
+.react-flow__controls-button {
+  background: var(--popover);
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+}
+.react-flow__controls-button:hover {
+  background: var(--muted);
+}
+.react-flow__minimap {
+  background-color: var(--popover);
+  border-radius: 10px;
+  box-shadow: var(--shadow-soft);
+}
+.react-flow__minimap-mask {
+  fill: rgb(0 0 0 / 20%);
+}
+.react-flow__node.selected {
+  box-shadow: 0 0 0 3px var(--ring);
 }

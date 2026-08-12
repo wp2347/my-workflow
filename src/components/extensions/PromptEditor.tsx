@@ -185,7 +185,7 @@ export function PromptEditor({ open, onOpenChange, promptId, onSaved }: PromptEd
               </div>
               <div className="space-y-2">
                 <Label>{t("extensions.prompts.role")}</Label>
-                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v ?? "" })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="system">{t("extensions.prompts.roleSystem")}</SelectItem>

@@ -222,7 +222,7 @@ export function McpEditor({ open, onOpenChange, mcpId, onSaved }: McpEditorProps
             {/* Transport */}
             <div className="space-y-2">
               <Label>{t("extensions.mcp.transport")}</Label>
-              <Select value={form.transport} onValueChange={(v) => setForm({ ...form, transport: v })}>
+              <Select value={form.transport} onValueChange={(v) => setForm({ ...form, transport: v ?? "" })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="http">{t("extensions.mcp.transportHttp")}</SelectItem>
