@@ -61,11 +61,11 @@ describe("executeLLMNode credential resolution", () => {
     expect(generateText).not.toHaveBeenCalled()
   })
 
-  it("credentialId 为空 → 走原逻辑（无 env key 时抛 No API key）", async () => {
+  it("credentialId 为空 → 走原逻辑（无 env key 时抛明确的厂商 Key 缺失错误）", async () => {
     resolveCredentialValue.mockResolvedValue(null)
     const node = makeNode({ provider: "openai", model: "gpt-4o-mini", apiKey: "", credentialId: "" })
 
-    await expect(executeLLMNode(node, makeCtx())).rejects.toThrow(/No API key/)
+    await expect(executeLLMNode(node, makeCtx())).rejects.toThrow(/未找到 OpenAI 的 API Key/)
     expect(resolveCredentialValue).not.toHaveBeenCalled()
     expect(generateText).not.toHaveBeenCalled()
   })

@@ -88,10 +88,16 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
     if (!credentialKey) throw new Error(`Credential not found: ${credentialId}`)
   }
 
-  const finalApiKey = credentialKey ?? (apiKey || defaultApiKey || process.env.OPENAI_API_KEY || "")
+  const finalApiKey = credentialKey ?? (apiKey || defaultApiKey)
   const finalBaseUrl = baseUrl || defaultBaseUrl
 
-  if (!finalApiKey) throw new Error(`No API key for ${providerInfo?.name || provider}`)
+  if (!finalApiKey) {
+    const providerName = providerInfo?.name || provider
+    const envHint = providerInfo?.defaultApiKeyEnv
+      ? `请设置环境变量 ${providerInfo.defaultApiKeyEnv}，或在节点配置中填写 API Key，或绑定全局凭证。`
+      : "请选择厂商后填写对应的 API Key 或绑定全局凭证。"
+    throw new Error(`未找到 ${providerName} 的 API Key。${envHint}`)
+  }
 
   const model = createModel(provider, modelId, finalApiKey, finalBaseUrl)
 
