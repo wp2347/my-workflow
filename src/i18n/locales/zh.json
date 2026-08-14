@@ -301,6 +301,18 @@
       "music": {
         "name": "音乐生成模板",
         "description": "输入提示词自动生成音乐并导出"
+      },
+      "fileToDocx": {
+        "name": "本地文件生成 Word 报告",
+        "description": "读取 storage 目录下的文件，由 AI 生成 Word 报告"
+      },
+      "dataToXlsx": {
+        "name": "数据生成 Excel 报表",
+        "description": "把输入数据整理成表格，AI 生成 Excel 报表"
+      },
+      "markdownToPptx": {
+        "name": "大纲生成 PPT",
+        "description": "输入主题，AI 生成 Markdown 大纲并输出 PPT 文件"
       }
     }
   },

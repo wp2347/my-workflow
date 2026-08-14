@@ -301,6 +301,18 @@
       "music": {
         "name": "Music Generation Template",
         "description": "Generate music from a prompt and export it"
+      },
+      "fileToDocx": {
+        "name": "Local Files to Word Report",
+        "description": "Read files under storage/ and generate a Word report with AI"
+      },
+      "dataToXlsx": {
+        "name": "Data to Excel Report",
+        "description": "Turn described data into a spreadsheet and generate an Excel file with AI"
+      },
+      "markdownToPptx": {
+        "name": "Outline to PPT",
+        "description": "Enter a topic, AI generates a Markdown outline and a PPT file"
       }
     }
   },
