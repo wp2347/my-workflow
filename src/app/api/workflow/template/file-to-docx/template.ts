@@ -1,0 +1,48 @@
+import type { Template } from "../types"
+
+const I18N = {
+  zh: {
+    name: "本地文件生成 Word 报告",
+    description: "读取 storage 目录下的文件，由 AI 生成 Word 报告",
+    labelInput: "报告主题",
+    labelLLM: "AI 撰写",
+    labelOutput: "输出结果",
+    prompt: "你是文档撰写助手。请完成以下任务：\n1. 先用 filesystem 工具的 list_directory 查看 storage 目录，用 read_file 读取用户指定或相关的文件内容。\n2. 基于读取到的内容，结合用户给出的报告主题，撰写一份结构清晰的 Word 报告（Markdown 格式，含标题层级、列表、表格）。\n3. 调用 office 的 create_docx 工具，参数 markdown 传你撰写的报告内容，outputPath 传 storage/export/报告-<日期>.docx。\n4. 用一句话告知生成的文件路径。",
+  },
+  en: {
+    name: "Local Files to Word Report",
+    description: "Read files under storage/ and generate a Word report with AI",
+    labelInput: "Report Topic",
+    labelLLM: "AI Writer",
+    labelOutput: "Output",
+    prompt: "You are a document writing assistant. Do the following:\n1. Use the filesystem tool list_directory to inspect the storage directory, and read_file to read files relevant to the user's topic.\n2. Based on the content, write a well-structured Word report (Markdown with headings, lists, tables).\n3. Call the office create_docx tool: markdown = your report content, outputPath = storage/export/report-<date>.docx.\n4. Reply with one sentence stating the generated file path.",
+  },
+}
+
+export function buildFileToDocxTemplate(lang: string): Template {
+  const i = lang === "en" ? I18N.en : I18N.zh
+  return {
+    name: i.name,
+    description: i.description,
+    nodes: [
+      { id: "input-1", type: "input", position: { x: 100, y: 220 },
+        data: { type: "input", label: i.labelInput, config: { name: "message", type: "text", required: true } } },
+      { id: "llm-1", type: "llm", position: { x: 340, y: 220 },
+        data: { type: "llm", label: i.labelLLM, config: {
+          provider: "deepseek", model: "deepseek-chat", temperature: 0.4,
+          systemPrompt: i.prompt,
+          extensions: {
+            skills: [{ packId: "filesystem" }, { packId: "office" }],
+            prompts: [],
+            mcp: [{ packId: "filesystem" }, { packId: "office" }],
+          },
+        } } },
+      { id: "output-1", type: "output", position: { x: 580, y: 220 },
+        data: { type: "output", label: i.labelOutput, config: { format: "text", template: "{{ $node.llm-1.text }}" } } },
+    ],
+    edges: [
+      { id: "e1", source: "input-1", target: "llm-1" },
+      { id: "e2", source: "llm-1", target: "output-1" },
+    ],
+  }
+}

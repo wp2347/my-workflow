@@ -4,6 +4,9 @@ import { buildLlmAppsTemplate } from "@/app/api/workflow/template/llm-apps/templ
 import { buildModelCompareTemplate } from "@/app/api/workflow/template/model-compare/template"
 import { buildSupportRoutingTemplate } from "@/app/api/workflow/template/support-routing/template"
 import { buildReminderTemplate } from "@/app/api/workflow/template/reminder/template"
+import { buildFileToDocxTemplate } from "@/app/api/workflow/template/file-to-docx/template"
+import { buildDataToXlsxTemplate } from "@/app/api/workflow/template/data-to-xlsx/template"
+import { buildMarkdownToPptxTemplate } from "@/app/api/workflow/template/markdown-to-pptx/template"
 import type { Template, TemplateMeta } from "@/app/api/workflow/template/types"
 
 export type { Template, TemplateMeta, TemplateNode, TemplateEdge } from "@/app/api/workflow/template/types"
@@ -60,6 +63,30 @@ export const TEMPLATES: TemplateEntry[] = [
     icon: "Music",
     category: "music",
     build: buildMusicTemplate,
+  },
+  {
+    id: "file-to-docx",
+    nameKey: "templates.list.fileToDocx.name",
+    descriptionKey: "templates.list.fileToDocx.description",
+    icon: "FileText",
+    category: "file",
+    build: buildFileToDocxTemplate,
+  },
+  {
+    id: "data-to-xlsx",
+    nameKey: "templates.list.dataToXlsx.name",
+    descriptionKey: "templates.list.dataToXlsx.description",
+    icon: "Table",
+    category: "file",
+    build: buildDataToXlsxTemplate,
+  },
+  {
+    id: "markdown-to-pptx",
+    nameKey: "templates.list.markdownToPptx.name",
+    descriptionKey: "templates.list.markdownToPptx.description",
+    icon: "Presentation",
+    category: "file",
+    build: buildMarkdownToPptxTemplate,
   },
 ]
 
