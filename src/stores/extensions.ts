@@ -35,13 +35,25 @@ export interface McpItem {
   updatedAt: string
 }
 
-type TabType = "skills" | "prompts" | "mcp"
+type TabType = "skills" | "prompts" | "mcp" | "packs"
+
+export interface PackItem {
+  id: string
+  name: string
+  description: string
+  category?: string
+  icon?: string
+  version: string
+  source: "builtin" | "imported"
+  installed: boolean
+}
 
 interface ExtensionsStore {
   activeTab: TabType
   skills: SkillItem[]
   prompts: PromptItem[]
   mcpServers: McpItem[]
+  packs: PackItem[]
   loading: boolean
   searchQuery: string
 
@@ -50,11 +62,16 @@ interface ExtensionsStore {
   setSkills: (items: SkillItem[]) => void
   setPrompts: (items: PromptItem[]) => void
   setMcpServers: (items: McpItem[]) => void
+  setPacks: (items: PackItem[]) => void
   setLoading: (loading: boolean) => void
 
   fetchSkills: () => Promise<void>
   fetchPrompts: () => Promise<void>
   fetchMcpServers: () => Promise<void>
+  fetchPacks: () => Promise<void>
+  installPack: (id: string) => Promise<void>
+  uninstallPack: (id: string) => Promise<void>
+  importPack: (manifest: unknown) => Promise<void>
 }
 
 export const useExtensionsStore = create<ExtensionsStore>((set, get) => ({
@@ -62,6 +79,7 @@ export const useExtensionsStore = create<ExtensionsStore>((set, get) => ({
   skills: [],
   prompts: [],
   mcpServers: [],
+  packs: [],
   loading: false,
   searchQuery: "",
 
@@ -70,6 +88,7 @@ export const useExtensionsStore = create<ExtensionsStore>((set, get) => ({
   setSkills: (items) => set({ skills: items }),
   setPrompts: (items) => set({ prompts: items }),
   setMcpServers: (items) => set({ mcpServers: items }),
+  setPacks: (items) => set({ packs: items }),
   setLoading: (loading) => set({ loading }),
 
   fetchSkills: async () => {
@@ -112,5 +131,33 @@ export const useExtensionsStore = create<ExtensionsStore>((set, get) => ({
     } finally {
       set({ loading: false })
     }
+  },
+
+  fetchPacks: async () => {
+    const res = await fetch("/api/packs")
+    if (!res.ok) throw new Error("Failed to fetch packs")
+    set({ packs: await res.json() })
+  },
+
+  installPack: async (id) => {
+    const res = await fetch(`/api/packs/${id}/install`, { method: "POST" })
+    if (!res.ok) throw new Error("Install failed")
+    await get().fetchPacks()
+  },
+
+  uninstallPack: async (id) => {
+    const res = await fetch(`/api/packs/${id}/uninstall`, { method: "POST" })
+    if (!res.ok) throw new Error("Uninstall failed")
+    await get().fetchPacks()
+  },
+
+  importPack: async (manifest) => {
+    const res = await fetch("/api/packs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(manifest),
+    })
+    if (!res.ok) throw new Error("Import failed")
+    await get().fetchPacks()
   },
 }))

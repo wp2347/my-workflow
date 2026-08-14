@@ -9,15 +9,18 @@ import { Search, Plus, Upload } from "lucide-react"
 import { SkillsTab } from "./SkillsTab"
 import { PromptsTab } from "./PromptsTab"
 import { McpTab } from "./McpTab"
+import { PacksTab } from "./PacksTab"
 import { SkillEditor } from "./SkillEditor"
 import { PromptEditor } from "./PromptEditor"
 import { McpEditor } from "./McpEditor"
+import { PackImportDialog } from "./PackImportDialog"
 
 export function ExtensionLibrary() {
   const { t } = useTranslation()
-  const { activeTab, setActiveTab, searchQuery, setSearchQuery, fetchSkills, fetchPrompts, fetchMcpServers } = useExtensionsStore()
+  const { activeTab, setActiveTab, searchQuery, setSearchQuery, fetchSkills, fetchPrompts, fetchMcpServers, fetchPacks, installPack, uninstallPack, packs, loading } = useExtensionsStore()
 
   const [editorOpen, setEditorOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editId, setEditId] = useState<string | undefined>(undefined)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -25,6 +28,7 @@ export function ExtensionLibrary() {
     { id: "skills" as const, label: t("extensions.tabs.skills") },
     { id: "prompts" as const, label: t("extensions.tabs.prompts") },
     { id: "mcp" as const, label: t("extensions.tabs.mcp") },
+    { id: "packs" as const, label: t("extensions.tabs.packs") },
   ]
 
   const handleCreate = () => {
@@ -41,6 +45,7 @@ export function ExtensionLibrary() {
     if (activeTab === "skills") fetchSkills()
     else if (activeTab === "prompts") fetchPrompts()
     else if (activeTab === "mcp") fetchMcpServers()
+    else if (activeTab === "packs") fetchPacks()
   }
 
   const handleUpload = () => {
@@ -75,6 +80,7 @@ export function ExtensionLibrary() {
     if (activeTab === "skills") fetchSkills()
     else if (activeTab === "prompts") fetchPrompts()
     else if (activeTab === "mcp") fetchMcpServers()
+    else if (activeTab === "packs") fetchPacks()
   }
 
   return (
@@ -90,16 +96,23 @@ export function ExtensionLibrary() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">{t("extensions.title")}</h1>
         <div className="flex gap-2">
-          {activeTab !== "mcp" && (
+          {activeTab !== "mcp" && activeTab !== "packs" && (
             <Button variant="outline" size="sm" onClick={handleUpload}>
               <Upload className="h-4 w-4 mr-1" />
               {t("extensions.common.upload")}
             </Button>
           )}
-          <Button size="sm" onClick={handleCreate}>
-            <Plus className="h-4 w-4 mr-1" />
-            {t("extensions.common.create")}
-          </Button>
+          {activeTab === "packs" ? (
+            <Button size="sm" onClick={() => setImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-1" />
+              {t("packs.import")}
+            </Button>
+          ) : (
+            <Button size="sm" onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-1" />
+              {t("extensions.common.create")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -133,6 +146,7 @@ export function ExtensionLibrary() {
         {activeTab === "skills" && <SkillsTab onEdit={handleEdit} onRefresh={refresh} />}
         {activeTab === "prompts" && <PromptsTab onEdit={handleEdit} onRefresh={refresh} />}
         {activeTab === "mcp" && <McpTab onEdit={handleEdit} onRefresh={refresh} />}
+        {activeTab === "packs" && <PacksTab packs={packs} loading={loading} onInstall={installPack} onUninstall={uninstallPack} />}
       </div>
 
       {/* Editors */}
@@ -145,6 +159,8 @@ export function ExtensionLibrary() {
       {activeTab === "mcp" && (
         <McpEditor open={editorOpen} onOpenChange={setEditorOpen} mcpId={editId} onSaved={handleSaved} />
       )}
+
+      <PackImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={handleSaved} />
     </div>
   )
 }
