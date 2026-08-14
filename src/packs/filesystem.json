@@ -1,0 +1,25 @@
+{
+  "id": "filesystem",
+  "name": "filesystem",
+  "description": "Read, write, list and search local files under the allowed directories. Defaults to the storage/ folder; edit the server args to allow more directories.",
+  "category": "file",
+  "icon": "folder-open",
+  "version": "1.0.0",
+  "mcps": [
+    {
+      "name": "filesystem",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "storage"],
+      "tools": "all"
+    }
+  ],
+  "skills": [
+    {
+      "name": "filesystem-usage",
+      "description": "Guide for reading local files with the filesystem MCP server.",
+      "category": "file",
+      "content": "You have access to a local filesystem MCP server. Use list_directory to enumerate a folder, read_file to read a file's content, and search_files to find files by name or pattern. All operations are restricted to the allowed directories configured on the server. When a workflow mentions reading local files, start by listing the target directory, then read the relevant files and summarize their content for the workflow."
+    }
+  ]
+}
