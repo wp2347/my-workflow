@@ -24,7 +24,7 @@ export async function getInstalledPackIds(): Promise<string[]> {
   return [...ids]
 }
 
-export async function installPack(manifest: PackManifest, _source: "builtin" | "imported"): Promise<void> {
+export async function installPack(manifest: PackManifest): Promise<void> {
   const { id, mcps, skills, prompts } = manifest
   if (await isPackInstalled(id)) {
     throw new Error(`Pack ${id} is already installed`)

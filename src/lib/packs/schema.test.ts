@@ -24,7 +24,8 @@ describe("validatePackManifest", () => {
   })
 
   it("rejects a manifest without mcps", () => {
-    const { mcps, ...noMcps } = validManifest
+    const noMcps = { ...validManifest } as Record<string, unknown>
+    delete noMcps.mcps
     const r = validatePackManifest(noMcps)
     expect(r.valid).toBe(false)
   })

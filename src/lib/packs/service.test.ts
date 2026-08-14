@@ -30,7 +30,7 @@ afterAll(async () => {
 
 describe("installPack", () => {
   it("creates mcp server and skill rows with packId", async () => {
-    await installPack(manifest, "imported")
+    await installPack(manifest)
     const mcps = await prisma.mcpServer.findMany({ where: { packId: TEST_PACK_ID } })
     const skills = await prisma.skill.findMany({ where: { packId: TEST_PACK_ID } })
     expect(mcps.length).toBe(1)
@@ -41,7 +41,7 @@ describe("installPack", () => {
   })
 
   it("throws when already installed", async () => {
-    await expect(installPack(manifest, "imported")).rejects.toThrow(/already installed/i)
+    await expect(installPack(manifest)).rejects.toThrow(/already installed/i)
   })
 
   it("uninstall removes all rows", async () => {

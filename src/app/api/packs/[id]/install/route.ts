@@ -22,7 +22,7 @@ export async function POST(_req: NextRequest, ctx: { params: Promise<{ id: strin
     if (await isPackInstalled(id)) {
       return NextResponse.json({ error: "Pack already installed" }, { status: 409 })
     }
-    await installPack(manifest, "builtin")
+    await installPack(manifest)
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error("Failed to install pack:", error)
