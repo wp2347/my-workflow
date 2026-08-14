@@ -6,6 +6,7 @@ export interface SkillItem {
   description: string
   category?: string
   tags: string[]
+  packId?: string
   updatedAt: string
 }
 
@@ -16,6 +17,7 @@ export interface PromptItem {
   category?: string
   role: string
   tags: string[]
+  packId?: string
   updatedAt: string
 }
 
@@ -29,6 +31,7 @@ export interface McpItem {
   command?: string
   hasAuth: boolean
   tags: string[]
+  packId?: string
   updatedAt: string
 }
 

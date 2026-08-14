@@ -170,6 +170,7 @@ model Skill {
   name        String
   description String   @db.Text
   category    String?
+  packId      String?  @map("pack_id")
   content     String   @db.Text
   attachments Json     @default("[]")
   tags        String[] @default([])
@@ -185,6 +186,7 @@ model Prompt {
   name        String
   description String?
   category    String?
+  packId      String?  @map("pack_id")
   content     String   @db.Text
   variables   Json     @default("[]")
   role        String   @default("system")
@@ -210,9 +212,24 @@ model McpServer {
   status            String    @default("untested")
   lastCheckedAt     DateTime? @map("last_checked_at")
   tags              String[]  @default([])
+  packId            String?   @map("pack_id")
   version           String    @default("1.0.0")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
   @@map("mcp_servers")
+}
+
+model Pack {
+  id          String   @id
+  name        String
+  description String   @db.Text
+  category    String?
+  icon        String?
+  version     String
+  source      String   @default("imported")
+  manifest    Json
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("packs")
 }
