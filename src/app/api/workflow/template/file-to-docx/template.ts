@@ -7,7 +7,7 @@ const I18N = {
     labelInput: "报告主题",
     labelLLM: "AI 撰写",
     labelOutput: "输出结果",
-    prompt: "你是文档撰写助手。请完成以下任务：\n1. 用户输入中包含一个本地文件路径（storage/ 目录下）。用 filesystem 的 read_file 工具读取该路径的文件内容。\n2. 基于读取到的内容，结合用户给出的报告主题，撰写一份结构清晰的 Word 报告（Markdown 格式，含标题层级、列表、表格）。\n3. 调用 office 的 create_docx 工具，参数 markdown 传你撰写的报告内容，outputPath 传 storage/export/报告-<日期>.docx。\n4. 用一句话告知生成的文件路径。",
+    prompt: "你是文档撰写助手。请完成以下任务：\n1. 用户输入中包含一个本地路径（storage/ 目录下的文件或文件夹）。如果是文件夹，先用 filesystem 的 list_directory 查看目录，再用 read_file 读取其中相关文件；如果是文件，直接用 read_file 读取。\n2. 基于读取到的内容，结合用户给出的报告主题，撰写一份结构清晰的 Word 报告（Markdown 格式，含标题层级、列表、表格）。\n3. 调用 office 的 create_docx 工具，参数 markdown 传你撰写的报告内容，outputPath 传 storage/export/报告-<日期>.docx。\n4. 用一句话告知生成的文件路径。",
   },
   en: {
     name: "Local Files to Word Report",
@@ -15,7 +15,7 @@ const I18N = {
     labelInput: "Report Topic",
     labelLLM: "AI Writer",
     labelOutput: "Output",
-    prompt: "You are a document writing assistant. Do the following:\n1. The user input contains a local file path under storage/. Use the filesystem read_file tool to read that file.\n2. Based on the content, write a well-structured Word report (Markdown with headings, lists, tables).\n3. Call the office create_docx tool: markdown = your report content, outputPath = storage/export/report-<date>.docx.\n4. Reply with one sentence stating the generated file path.",
+    prompt: "You are a document writing assistant. Do the following:\n1. The user input contains a local path under storage/ (a file or a folder). If it is a folder, use the filesystem list_directory tool to inspect it, then read_file the relevant files inside. If it is a file, read it directly with read_file.\n2. Based on the content, write a well-structured Word report (Markdown with headings, lists, tables).\n3. Call the office create_docx tool: markdown = your report content, outputPath = storage/export/report-<date>.docx.\n4. Reply with one sentence stating the generated file path.",
   },
 }
 

@@ -14,7 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, ExternalLink, Eye, EyeOff, Package, Download } from "lucide-react"
+import { Trash2, ExternalLink, Eye, EyeOff, Package, Download, FolderOpen, FileText } from "lucide-react"
 import { ExtensionPicker } from "@/components/extensions/ExtensionPicker"
 import { CredentialSelect } from "@/components/panels/CredentialSelect"
 import { MusicPlayer } from "@/components/music/MusicPlayer"
@@ -30,7 +30,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   const config = (node.data.config as Record<string, unknown>) || {}
   const [showApiKey, setShowApiKey] = useState(false)
   const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([])
-  const [storageFiles, setStorageFiles] = useState<Array<{ path: string; size: number }>>([])
+  const [storageFiles, setStorageFiles] = useState<Array<{ path: string; size: number; isDir: boolean }>>([])
   const [headersText, setHeadersText] = useState(() => JSON.stringify(config.headers || {}, null, 2))
   const [headersError, setHeadersError] = useState<string | null>(null)
   const [prevHeadersConfig, setPrevHeadersConfig] = useState(config.headers)
@@ -132,7 +132,19 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
                 <SelectTrigger className="w-full"><SelectValue placeholder={t("config.fileSelectPlaceholder")} /></SelectTrigger>
                 <SelectContent className="max-h-72">
                   {storageFiles.map((f) => (
-                    <SelectItem key={f.path} value={f.path}>{f.path}</SelectItem>
+                    <SelectItem key={f.path} value={f.path}>
+                      {f.isDir ? (
+                        <span className="flex items-center gap-1.5">
+                          <FolderOpen className="h-3.5 w-3.5 text-warning" />
+                          <span className="truncate">{f.path}/</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="truncate">{f.path}</span>
+                        </span>
+                      )}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

@@ -229,10 +229,10 @@
     "credentialSelected": "已选凭证",
     "noCredential": "暂无全局凭证，请先在凭证管理中添加。",
     "credentialLink": "前往凭证管理",
-    "typeFile": "文件",
-    "fileSelect": "选择本地文件",
+    "typeFile": "文件/文件夹",
+    "fileSelect": "选择本地文件或文件夹",
     "fileSelectPlaceholder": "从 storage/ 目录选择文件",
-    "fileSelectHint": "选中文件的路径将作为输入变量传给下游，LLM 可通过 filesystem MCP 读取"
+    "fileSelectHint": "选中路径将作为输入变量传给下游；文件夹会列出并读取其中文件，LLM 可通过 filesystem MCP 访问"
   },
   "audioResult": {
     "preview": "预览",
