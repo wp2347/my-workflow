@@ -135,9 +135,6 @@
     "httpUrl": "URL",
     "httpBody": "请求体",
     "httpBodyHint": "支持 {{变量}} 引用上游节点输出",
-    "retrySettings": "▸ 错误重试设置",
-    "maxRetries": "最大重试次数",
-    "template": "模板",
     "knowledge": "知识库",
     "knowledgeNone": "不使用",
     "knowledgePlaceholder": "不使用知识库",
@@ -200,10 +197,6 @@
     "agentSupportDesc": "你是技术客服，帮用户解决技术问题，回答简洁准确。",
     "agentTranslator": "翻译专家",
     "agentTranslatorDesc": "你是翻译专家，帮用户翻译文本，保持原意和风格。",
-    "httpMethod": "方法",
-    "httpUrl": "URL",
-    "httpBody": "请求体",
-    "httpBodyHint": "支持 {{变量}} 引用上游节点输出",
     "musicApiUrl": "API 地址",
     "musicMethod": "请求方法",
     "musicHeaders": "请求头",
@@ -331,7 +324,8 @@
     "tabs": {
       "skills": "技能包",
       "prompts": "提示词",
-      "mcp": "MCP 服务"
+      "mcp": "MCP 服务",
+      "packs": "技能包市场"
     },
     "common": {
       "create": "新建",
@@ -497,7 +491,16 @@
     "daily": "每天 {time}",
     "weekday": "工作日 {time}",
     "weekly": "每周{day} {time}",
-    "days": { "0": "日", "1": "一", "2": "二", "3": "三", "4": "四", "5": "五", "6": "六", "7": "日" }
+    "days": {
+      "0": "日",
+      "1": "一",
+      "2": "二",
+      "3": "三",
+      "4": "四",
+      "5": "五",
+      "6": "六",
+      "7": "日"
+    }
   },
   "widget": {
     "requestFailed": "请求失败，请重试",
@@ -506,5 +509,29 @@
   },
   "workflow": {
     "untitled": "未命名工作流"
+  },
+  "packs": {
+    "title": "技能包市场",
+    "install": "安装",
+    "uninstall": "卸载",
+    "uninstallConfirm": "确定要卸载技能包「{name}」吗？已安装的 MCP 服务与技能将被删除。",
+    "installed": "已安装",
+    "import": "导入技能包",
+    "importTitle": "导入技能包",
+    "importPlaceholder": "粘贴技能包 JSON 清单...",
+    "importInvalidJson": "JSON 解析失败，请检查格式",
+    "empty": "暂无技能包",
+    "source": {
+      "official": "官方",
+      "imported": "导入"
+    },
+    "office": {
+      "name": "文档生成",
+      "description": "由 LLM 生成 Word/Excel/PPT/PDF 文件（Markdown/JSON 内容自动转换）"
+    },
+    "filesystem": {
+      "name": "本地文件读写",
+      "description": "读取/列出/搜索 storage 目录下的本地文件，供工作流使用"
+    }
   }
 }
