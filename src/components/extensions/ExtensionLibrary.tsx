@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useTranslation } from "@/i18n"
 import { useExtensionsStore } from "@/stores/extensions"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,10 @@ export function ExtensionLibrary() {
   const [importOpen, setImportOpen] = useState(false)
   const [editId, setEditId] = useState<string | undefined>(undefined)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (activeTab === "packs") fetchPacks()
+  }, [activeTab, fetchPacks])
 
   const tabs = [
     { id: "skills" as const, label: t("extensions.tabs.skills") },
