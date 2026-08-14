@@ -30,6 +30,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   const config = (node.data.config as Record<string, unknown>) || {}
   const [showApiKey, setShowApiKey] = useState(false)
   const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([])
+  const [storageFiles, setStorageFiles] = useState<Array<{ path: string; size: number }>>([])
   const [headersText, setHeadersText] = useState(() => JSON.stringify(config.headers || {}, null, 2))
   const [headersError, setHeadersError] = useState<string | null>(null)
   const [prevHeadersConfig, setPrevHeadersConfig] = useState(config.headers)
@@ -57,6 +58,10 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
 
   useEffect(() => {
     fetch("/api/documents").then(r => r.json()).then(setDocuments).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/storage/files").then(r => r.json()).then(d => setStorageFiles(d.files || [])).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -112,6 +117,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
                 <SelectItem value="number">Number</SelectItem>
                 <SelectItem value="boolean">Boolean</SelectItem>
                 <SelectItem value="json">JSON</SelectItem>
+                <SelectItem value="file">{t("config.typeFile")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -119,10 +125,25 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
             <Label htmlFor="input-required">{t("config.required")}</Label>
             <Switch id="input-required" checked={(config.required as boolean) || false} onCheckedChange={(v) => updateConfig("required", v)} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="input-default">{t("config.defaultValue")}</Label>
-            <Input id="input-default" value={(config.default as string) || ""} onChange={(e) => updateConfig("default", e.target.value)} placeholder="Optional" />
-          </div>
+          {((config.type as string) || "text") === "file" ? (
+            <div className="space-y-2">
+              <Label htmlFor="input-file">{t("config.fileSelect")}</Label>
+              <Select value={(config.default as string) || ""} onValueChange={(v) => updateConfig("default", v)}>
+                <SelectTrigger className="w-full"><SelectValue placeholder={t("config.fileSelectPlaceholder")} /></SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {storageFiles.map((f) => (
+                    <SelectItem key={f.path} value={f.path}>{f.path}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">{t("config.fileSelectHint")}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label htmlFor="input-default">{t("config.defaultValue")}</Label>
+              <Input id="input-default" value={(config.default as string) || ""} onChange={(e) => updateConfig("default", e.target.value)} placeholder="Optional" />
+            </div>
+          )}
         </div>
       )}
 

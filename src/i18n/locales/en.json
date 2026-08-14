@@ -228,7 +228,11 @@
     "credentialManual": "Manual input",
     "credentialSelected": "Credential selected",
     "noCredential": "No global credentials yet. Add one in Credentials first.",
-    "credentialLink": "Go to Credentials"
+    "credentialLink": "Go to Credentials",
+    "typeFile": "File",
+    "fileSelect": "Select Local File",
+    "fileSelectPlaceholder": "Choose a file under storage/",
+    "fileSelectHint": "The selected file path is passed to the workflow as the input variable; the LLM can read it via the filesystem MCP"
   },
   "audioResult": {
     "preview": "Preview",
