@@ -1,23 +1,50 @@
 import { tool } from "ai"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import type { ExecutionContext } from "@/types/workflow"
+import type { ExecutionContext, SkillPackBinding } from "@/types/workflow"
+
+export type SkillBinding = string | SkillPackBinding
 
 export interface SkillPayload {
   systemContext: string[]
   loadSkillTool?: Record<string, unknown>
 }
 
+async function resolveSkillIds(entries: SkillBinding[]): Promise<string[]> {
+  const ids: string[] = []
+  const packIds = new Set<string>()
+  for (const entry of entries) {
+    if (typeof entry === "string") {
+      ids.push(entry)
+    } else {
+      packIds.add(entry.packId)
+    }
+  }
+  if (packIds.size > 0) {
+    const rows = await prisma.skill.findMany({
+      where: { packId: { in: [...packIds] } },
+      select: { id: true, packId: true },
+    })
+    for (const row of rows) {
+      if (row.packId) ids.push(row.id)
+    }
+  }
+  return ids
+}
+
 /**
  * 加载绑定的 Skills 并构建注入 payload。
+ * - 支持 string id 或 { packId }（解析为已安装的同 packId 技能）
  * - ≤3 个:全量注入 content 到 systemContext
  * - >3 个:注入摘要 + 注册 load_skill tool(模型按需调用)
  * - 悬空 ID:warn + 跳过
  */
 export async function loadSkills(
-  skillIds: string[],
+  entries: SkillBinding[],
   _context: ExecutionContext,
 ): Promise<SkillPayload> {
+  const skillIds = await resolveSkillIds(entries)
+
   if (skillIds.length === 0) {
     return { systemContext: [] }
   }
