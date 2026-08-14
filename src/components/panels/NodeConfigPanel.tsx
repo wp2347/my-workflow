@@ -14,9 +14,10 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, ExternalLink, Eye, EyeOff, Package, Download, FolderOpen, FileText } from "lucide-react"
+import { Trash2, ExternalLink, Eye, EyeOff, Package, Download, FolderOpen, X } from "lucide-react"
 import { ExtensionPicker } from "@/components/extensions/ExtensionPicker"
 import { CredentialSelect } from "@/components/panels/CredentialSelect"
+import { LocalDirPicker } from "@/components/panels/LocalDirPicker"
 import { MusicPlayer } from "@/components/music/MusicPlayer"
 
 interface NodeConfigPanelProps { node: WorkflowNode }
@@ -30,7 +31,7 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   const config = (node.data.config as Record<string, unknown>) || {}
   const [showApiKey, setShowApiKey] = useState(false)
   const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([])
-  const [storageFiles, setStorageFiles] = useState<Array<{ path: string; size: number; isDir: boolean }>>([])
+  const [dirPickerOpen, setDirPickerOpen] = useState(false)
   const [headersText, setHeadersText] = useState(() => JSON.stringify(config.headers || {}, null, 2))
   const [headersError, setHeadersError] = useState<string | null>(null)
   const [prevHeadersConfig, setPrevHeadersConfig] = useState(config.headers)
@@ -61,10 +62,6 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   }, [])
 
   useEffect(() => {
-    fetch("/api/storage/files").then(r => r.json()).then(d => setStorageFiles(d.files || [])).catch(() => {})
-  }, [])
-
-  useEffect(() => {
     if (workflowId) hydrate(workflowId)
   }, [workflowId, hydrate])
 
@@ -82,6 +79,19 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   }
 
   const handleDelete = () => { removeNode(node.id); setSelectedNodeId(null) }
+
+  const handleDirSelect = async (dir: string) => {
+    try {
+      await fetch("/api/fs/allow-dir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: dir }),
+      })
+    } catch {
+      // ignore: selection still recorded
+    }
+    updateConfig("default", dir)
+  }
 
   const getCronTime = (cfg: Record<string, unknown>) => {
     const expr = (cfg.cronExpr as string) || "0 9 * * *"
@@ -127,28 +137,24 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
           </div>
           {((config.type as string) || "text") === "file" ? (
             <div className="space-y-2">
-              <Label htmlFor="input-file">{t("config.fileSelect")}</Label>
-              <Select value={(config.default as string) || ""} onValueChange={(v) => updateConfig("default", v)}>
-                <SelectTrigger className="w-full"><SelectValue placeholder={t("config.fileSelectPlaceholder")} /></SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {storageFiles.map((f) => (
-                    <SelectItem key={f.path} value={f.path}>
-                      {f.isDir ? (
-                        <span className="flex items-center gap-1.5">
-                          <FolderOpen className="h-3.5 w-3.5 text-warning" />
-                          <span className="truncate">{f.path}/</span>
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5">
-                          <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="truncate">{f.path}</span>
-                        </span>
-                      )}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-muted-foreground">{t("config.fileSelectHint")}</p>
+              <Label>{t("config.fileSelect")}</Label>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" type="button" onClick={() => setDirPickerOpen(true)}>
+                  <FolderOpen className="h-3.5 w-3.5 mr-1" />
+                  {t("config.folderBrowse")}
+                </Button>
+                {(config.default as string) && (
+                  <Button variant="ghost" size="icon-sm" type="button" onClick={() => updateConfig("default", "")}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+              {(config.default as string) ? (
+                <div className="rounded-md bg-muted px-3 py-1.5 text-xs font-mono break-all">{config.default as string}</div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">{t("config.fileSelectHint")}</p>
+              )}
+              <LocalDirPicker open={dirPickerOpen} onOpenChange={setDirPickerOpen} onSelect={handleDirSelect} />
             </div>
           ) : (
             <div className="space-y-2">

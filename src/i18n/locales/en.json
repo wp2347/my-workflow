@@ -232,7 +232,14 @@
     "typeFile": "File/Folder",
     "fileSelect": "Select Local File or Folder",
     "fileSelectPlaceholder": "Choose a file under storage/",
-    "fileSelectHint": "The selected path is passed to the workflow as the input variable; folders are listed and read by the LLM via the filesystem MCP"
+    "fileSelectHint": "The selected path is passed to the workflow as the input variable; folders are listed and read by the LLM via the filesystem MCP",
+    "folderBrowse": "Browse local folder…",
+    "folderBrowseTitle": "Select Local Folder",
+    "folderUp": "Up",
+    "folderSelectHint": "Click a folder to enter; selecting adds it to the read whitelist",
+    "folderLoading": "Loading…",
+    "folderEmpty": "Empty or no permission",
+    "folderChoose": "Choose Folder"
   },
   "audioResult": {
     "preview": "Preview",

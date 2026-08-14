@@ -232,7 +232,14 @@
     "typeFile": "文件/文件夹",
     "fileSelect": "选择本地文件或文件夹",
     "fileSelectPlaceholder": "从 storage/ 目录选择文件",
-    "fileSelectHint": "选中路径将作为输入变量传给下游；文件夹会列出并读取其中文件，LLM 可通过 filesystem MCP 访问"
+    "fileSelectHint": "选中路径将作为输入变量传给下游；文件夹会列出并读取其中文件，LLM 可通过 filesystem MCP 访问",
+    "folderBrowse": "浏览本地文件夹…",
+    "folderBrowseTitle": "选择本地文件夹",
+    "folderUp": "上级目录",
+    "folderSelectHint": "点击文件夹进入，选择后自动加入读取白名单",
+    "folderLoading": "加载中…",
+    "folderEmpty": "此目录为空或无访问权限",
+    "folderChoose": "选择此文件夹"
   },
   "audioResult": {
     "preview": "预览",
