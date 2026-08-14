@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Plus, X, Package } from "lucide-react"
-import type { ExtensionBindings, McpBinding } from "@/types/workflow"
+import type { ExtensionBindings, McpBinding, McpPackBinding, SkillPackBinding } from "@/types/workflow"
 
 interface ExtensionPickerProps {
   value: ExtensionBindings
@@ -24,16 +24,23 @@ export function ExtensionPicker({ value, onChange }: ExtensionPickerProps) {
   const [pickerType, setPickerType] = useState<"skills" | "prompts" | "mcp" | null>(null)
 
   const updateSkills = (ids: string[]) => {
-    onChange({ ...value, skills: ids })
+    const packs = value.skills.filter((s): s is SkillPackBinding => typeof s !== "string")
+    onChange({ ...value, skills: [...packs, ...ids] })
   }
 
   const updatePrompts = (ids: string[]) => {
-    onChange({ ...value, prompts: ids })
+    const packs = value.prompts.filter((s): s is SkillPackBinding => typeof s !== "string")
+    onChange({ ...value, prompts: [...packs, ...ids] })
   }
 
   const updateMcp = (bindings: McpBinding[]) => {
-    onChange({ ...value, mcp: bindings })
+    const packs = value.mcp.filter((m): m is McpPackBinding => !("serverId" in m))
+    onChange({ ...value, mcp: [...packs, ...bindings] })
   }
+
+  const skillStringIds = value.skills.filter((s): s is string => typeof s === "string")
+  const promptStringIds = value.prompts.filter((s): s is string => typeof s === "string")
+  const mcpServerBindings = value.mcp.filter((m): m is McpBinding => "serverId" in m)
 
   return (
     <div className="space-y-3">
@@ -58,9 +65,13 @@ export function ExtensionPicker({ value, onChange }: ExtensionPickerProps) {
           </Button>
         </div>
         <div className="flex flex-wrap gap-1">
-          {value.skills.map((id) => (
-            <SkillBadge key={id} id={id} onRemove={() => updateSkills(value.skills.filter((s) => s !== id))} />
-          ))}
+          {value.skills.map((entry, i) =>
+            typeof entry === "string" ? (
+              <SkillBadge key={entry} id={entry} onRemove={() => updateSkills(skillStringIds.filter((s) => s !== entry))} />
+            ) : (
+              <PackBadge key={`pack-${entry.packId}-${i}`} packId={entry.packId} />
+            ),
+          )}
           {value.skills.length === 0 && (
             <span className="text-xs text-muted-foreground">—</span>
           )}
@@ -83,9 +94,13 @@ export function ExtensionPicker({ value, onChange }: ExtensionPickerProps) {
           </Button>
         </div>
         <div className="flex flex-wrap gap-1">
-          {value.prompts.map((id) => (
-            <PromptBadge key={id} id={id} onRemove={() => updatePrompts(value.prompts.filter((p) => p !== id))} />
-          ))}
+          {value.prompts.map((entry, i) =>
+            typeof entry === "string" ? (
+              <PromptBadge key={entry} id={entry} onRemove={() => updatePrompts(promptStringIds.filter((p) => p !== entry))} />
+            ) : (
+              <PackBadge key={`pack-${entry.packId}-${i}`} packId={entry.packId} />
+            ),
+          )}
           {value.prompts.length === 0 && (
             <span className="text-xs text-muted-foreground">—</span>
           )}
@@ -108,13 +123,17 @@ export function ExtensionPicker({ value, onChange }: ExtensionPickerProps) {
           </Button>
         </div>
         <div className="flex flex-wrap gap-1">
-          {value.mcp.map((binding) => (
-            <McpBadge
-              key={binding.serverId}
-              binding={binding}
-              onRemove={() => updateMcp(value.mcp.filter((m) => m.serverId !== binding.serverId))}
-            />
-          ))}
+          {value.mcp.map((binding, i) =>
+            "serverId" in binding ? (
+              <McpBadge
+                key={binding.serverId}
+                binding={binding}
+                onRemove={() => updateMcp(mcpServerBindings.filter((m) => m.serverId !== binding.serverId))}
+              />
+            ) : (
+              <PackBadge key={`pack-${binding.packId}-${i}`} packId={binding.packId} />
+            ),
+          )}
           {value.mcp.length === 0 && (
             <span className="text-xs text-muted-foreground">—</span>
           )}
@@ -125,12 +144,12 @@ export function ExtensionPicker({ value, onChange }: ExtensionPickerProps) {
       {pickerType && (
         <PickerDialog
           type={pickerType}
-          selectedIds={pickerType === "mcp" ? value.mcp.map((m) => m.serverId) : (pickerType === "skills" ? value.skills : value.prompts)}
+          selectedIds={pickerType === "mcp" ? mcpServerBindings.map((m) => m.serverId) : (pickerType === "skills" ? skillStringIds : promptStringIds)}
           onConfirm={(ids) => {
             if (pickerType === "skills") updateSkills(ids)
             else if (pickerType === "prompts") updatePrompts(ids)
             else if (pickerType === "mcp") {
-              const existing = new Map(value.mcp.map((m) => [m.serverId, m]))
+              const existing = new Map(mcpServerBindings.map((m) => [m.serverId, m]))
               const newBindings = ids.map((id) => existing.get(id) || { serverId: id, tools: "all" as const, resources: [], prompts: [] })
               updateMcp(newBindings)
             }
@@ -170,6 +189,15 @@ function PromptBadge({ id, onRemove }: { id: string; onRemove: () => void }) {
     <Badge variant="secondary" className="gap-1 text-xs">
       {name}
       <button onClick={onRemove} className="ml-1 hover:text-destructive"><X className="h-3 w-3" /></button>
+    </Badge>
+  )
+}
+
+function PackBadge({ packId }: { packId: string }) {
+  return (
+    <Badge variant="info" className="gap-1 text-xs">
+      <Package className="h-3 w-3" />
+      {packId}
     </Badge>
   )
 }

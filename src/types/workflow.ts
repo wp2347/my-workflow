@@ -166,9 +166,22 @@ export interface McpBinding {
   prompts?: string[]                  // 默认 []
 }
 
+/** 按 packId 引用技能包中的技能 */
+export interface SkillPackBinding {
+  packId: string
+}
+
+/** 按 packId 引用技能包中的 MCP server（可多个） */
+export interface McpPackBinding {
+  packId: string
+  tools?: string[] | "all"
+  resources?: string[]
+  prompts?: string[]
+}
+
 /** 扩展包绑定(Skills + Prompts + MCP) */
 export interface ExtensionBindings {
-  skills: string[]
-  prompts: string[]
-  mcp: McpBinding[]
+  skills: Array<string | SkillPackBinding>
+  prompts: Array<string | SkillPackBinding>
+  mcp: Array<McpBinding | McpPackBinding>
 }

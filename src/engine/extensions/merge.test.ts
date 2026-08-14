@@ -30,6 +30,6 @@ describe("mergeExtensions", () => {
     const nodeConfig = { extensions: { skills: [], prompts: [], mcp: [{ serverId: "srv2", tools: ["t1"] }] } }
     const result = mergeExtensions(wf, nodeConfig)
     expect(result.mcp).toHaveLength(1)
-    expect(result.mcp[0].serverId).toBe("srv2")
+    expect("serverId" in result.mcp[0] && result.mcp[0].serverId).toBe("srv2")
   })
 })
