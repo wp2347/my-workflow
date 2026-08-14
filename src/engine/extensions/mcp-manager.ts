@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma"
 import { decrypt } from "@/lib/crypto"
-import type { ExecutionContext, McpBinding } from "@/types/workflow"
+import type { ExecutionContext, McpBinding, McpPackBinding } from "@/types/workflow"
 import { spawn, type ChildProcess } from "child_process"
+
+export type McpBindingEntry = McpBinding | McpPackBinding
 
 export interface McpPayload {
   tools: Record<string, unknown>
@@ -42,9 +44,42 @@ if (typeof setInterval !== "undefined") {
  * - stdio:进程池管理(首次 spawn,引用计数,空闲超时 kill,崩溃重启 ≤3 次)
  */
 export async function loadMcpExtensions(
-  bindings: McpBinding[],
+  entries: McpBindingEntry[],
   _context: ExecutionContext,
 ): Promise<McpPayload> {
+  if (entries.length === 0) {
+    return { tools: {}, resourceContext: [] }
+  }
+
+  // 展开 packId 引用为具体 serverId 绑定（支持一个包多个 server）
+  const bindings: McpBinding[] = []
+  const packIds = new Set<string>()
+  const packBy = new Map<string, McpPackBinding>()
+  for (const entry of entries) {
+    if ("serverId" in entry) {
+      bindings.push(entry)
+    } else {
+      packIds.add(entry.packId)
+      packBy.set(entry.packId, entry)
+    }
+  }
+  if (packIds.size > 0) {
+    const servers = await prisma.mcpServer.findMany({
+      where: { packId: { in: [...packIds] } },
+      select: { id: true, packId: true },
+    })
+    for (const server of servers) {
+      if (!server.packId) continue
+      const pack = packBy.get(server.packId)
+      bindings.push({
+        serverId: server.id,
+        tools: pack?.tools,
+        resources: pack?.resources,
+        prompts: pack?.prompts,
+      })
+    }
+  }
+
   if (bindings.length === 0) {
     return { tools: {}, resourceContext: [] }
   }

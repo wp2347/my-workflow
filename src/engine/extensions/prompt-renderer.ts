@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { resolveExpression } from "@/lib/expression"
-import type { ExecutionContext } from "@/types/workflow"
+import type { ExecutionContext, SkillPackBinding } from "@/types/workflow"
+
+export type PromptBinding = string | SkillPackBinding
 
 export interface PromptPayload {
   systemPrompts: string[]
@@ -14,14 +16,39 @@ interface PromptVariable {
   defaultValue?: string
 }
 
+async function resolvePromptIds(entries: PromptBinding[]): Promise<string[]> {
+  const ids: string[] = []
+  const packIds = new Set<string>()
+  for (const entry of entries) {
+    if (typeof entry === "string") {
+      ids.push(entry)
+    } else {
+      packIds.add(entry.packId)
+    }
+  }
+  if (packIds.size > 0) {
+    const rows = await prisma.prompt.findMany({
+      where: { packId: { in: [...packIds] } },
+      select: { id: true, packId: true },
+    })
+    for (const row of rows) {
+      if (row.packId) ids.push(row.id)
+    }
+  }
+  return ids
+}
+
 /**
  * 渲染绑定的 Prompts 并按 role 分组。
- * 变量替换复用 @/lib/expression.ts 的 resolveExpression。
+ * - 支持 string id 或 { packId }（解析为已安装的同 packId prompt）
+ * - 变量替换复用 @/lib/expression.ts 的 resolveExpression。
  */
 export async function renderPrompts(
-  promptIds: string[],
+  entries: PromptBinding[],
   context: ExecutionContext,
 ): Promise<PromptPayload> {
+  const promptIds = await resolvePromptIds(entries)
+
   if (promptIds.length === 0) {
     return { systemPrompts: [], userPrompts: [] }
   }
