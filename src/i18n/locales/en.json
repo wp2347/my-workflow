@@ -275,7 +275,8 @@
     "category": {
       "music": "Music",
       "llm": "LLM Apps",
-      "automation": "Automation"
+      "automation": "Automation",
+      "file": "File"
     },
     "list": {
       "dailyBrief": {

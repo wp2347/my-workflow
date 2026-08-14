@@ -275,7 +275,8 @@
     "category": {
       "music": "音乐",
       "llm": "LLM 应用",
-      "automation": "自动化"
+      "automation": "自动化",
+      "file": "文件处理"
     },
     "list": {
       "dailyBrief": {

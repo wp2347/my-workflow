@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { loadSkills } from "./skill-loader"
 import { uninstallPack } from "@/lib/packs/service"
 
-const TEST_PACK_ID = "test-pack"
+const TEST_PACK_ID = "test-pack-skill-loader"
 const TEST_SKILL_NAME = "test-pack-skill"
 
 beforeAll(async () => {
