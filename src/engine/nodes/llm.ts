@@ -8,13 +8,14 @@ import { createMistral } from "@ai-sdk/mistral"
 import { createXai } from "@ai-sdk/xai"
 import { z } from "zod"
 
-import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
+import type { WorkflowNode, ExecutionContext, NodeExecutor, ToolCallInfo } from "@/types/workflow"
 import { getProvider } from "@/lib/providers"
 import { resolveCredentialValue } from "@/lib/credential"
 import { mergeExtensions } from "@/engine/extensions/merge"
 import { loadSkills } from "@/engine/extensions/skill-loader"
 import { renderPrompts } from "@/engine/extensions/prompt-renderer"
 import { loadMcpExtensions } from "@/engine/extensions/mcp-manager"
+import { assembleToolCallSteps, type SdkStepLike } from "@/engine/nodes/llm-steps"
 
 // 内存中的多轮对话历史（按 workflowId + nodeId 分组）
 const conversationMemory = new Map<string, Array<{ role: string; content: string }>>()
@@ -54,6 +55,31 @@ function createModel(provider: string, modelId: string, apiKey: string, baseUrl:
   }
 }
 
+/** 包装所有工具的 execute：把每次调用的耗时按工具名 FIFO 记录，供 assembleToolCallSteps 消费 */
+function instrumentTools(
+  tools: Record<string, unknown>,
+  timings: Map<string, number[]>,
+): Record<string, unknown> {
+  const wrapped: Record<string, unknown> = {}
+  for (const [name, t] of Object.entries(tools)) {
+    const obj = t as { execute?: (args: unknown) => Promise<unknown> }
+    if (typeof obj?.execute !== "function") { wrapped[name] = t; continue }
+    wrapped[name] = {
+      ...obj,
+      execute: async (args: unknown) => {
+        const start = Date.now()
+        try { return await obj.execute!(args) }
+        finally {
+          const arr = timings.get(name) || []
+          arr.push(Date.now() - start)
+          timings.set(name, arr)
+        }
+      },
+    }
+  }
+  return wrapped
+}
+
 /**
  * LLM 节点执行器。
  * 支持功能：
@@ -75,6 +101,8 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   const baseUrl = (config.baseUrl as string) || ""
   const credentialId = (config.credentialId as string) || ""
   const userInput = getPreviousOutputs(node, context)
+  // Agent 工具耗时采集容器（instrumentTools 写入，assembleToolCallSteps 消费）
+  let agentTimings: Map<string, number[]> | null = null
 
   // 从 providers 配置中获取默认 API key 和 base URL
   const providerInfo = getProvider(provider)
@@ -192,27 +220,24 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
     if (history.length > 1) genOptions.messages = history.slice(0, -1).map(m => ({ role: m.role as "user" | "assistant", content: m.content }))
   }
 
-  // 扩展 tools 注册
-  const hasSkillTool = !!skillPayload.loadSkillTool
-  const hasMcpTools = Object.keys(mcpPayload.tools || {}).length > 0
-  if (hasSkillTool || hasMcpTools) {
-    genOptions.tools = {
-      ...(skillPayload.loadSkillTool || {}),
-      ...(mcpPayload.tools || {}),
-    }
-    genOptions.maxSteps = (hasSkillTool && hasMcpTools) ? 5 : 3
-  }
+  // ===== Agent 循环上限（spec：1-20，默认 8；无工具时同样生效但无实际意义）=====
+  const maxStepsRaw = (nodeConfig.maxSteps as number) ?? 8
+  const maxAgentSteps = Math.min(Math.max(Math.round(maxStepsRaw), 1), 20)
 
-  // 工具调用
-  if (enableTools) {
-    genOptions.tools = { ...weatherTool, ...(genOptions.tools || {}) }
-    genOptions.maxSteps = Math.max(genOptions.maxSteps as number || 0, 5)
+  // 内置示例工具（天气）仅在开关打开时注册；MCP/skill 工具始终可用
+  const mergedTools: Record<string, unknown> = {
+    ...(skillPayload.loadSkillTool || {}),
+    ...(mcpPayload.tools || {}),
+    ...(enableTools ? weatherTool : {}),
   }
-
-  // 有 tools 时用 stopWhen 确保多步执行(工具调用后自动续轮生成最终回复)
-  if (genOptions.tools) {
-    genOptions.stopWhen = stepCountIs(genOptions.maxSteps as number || 5)
+  if (Object.keys(mergedTools).length > 0) {
+    const timings = new Map<string, number[]>()
+    agentTimings = timings
+    genOptions.tools = instrumentTools(mergedTools, timings)
   }
+  genOptions.maxSteps = maxAgentSteps
+  // stopWhen 确保多步执行(工具调用后自动续轮生成最终回复)
+  genOptions.stopWhen = stepCountIs(maxAgentSteps)
 
   const result = await generateText(genOptions as never)
   const ru = result as unknown as Record<string, unknown>
@@ -243,8 +268,16 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
     conversationMemory.set(convKey, history)
   }
 
+  // ===== Agent 步骤装配：SDK steps → ToolCallStep[]/ToolCallInfo[] =====
+  const assembled = assembleToolCallSteps(
+    ((ru.steps as SdkStepLike[] | undefined)) || [],
+    agentTimings ?? new Map(),
+  )
+
   return {
     text: outputText, raw: outputText, model: modelId, provider,
     usage: { promptTokens: (ru.usage as Record<string, number> | undefined)?.inputTokens ?? 0, completionTokens: (ru.usage as Record<string, number> | undefined)?.outputTokens ?? 0 },
+    steps: assembled.steps,
+    toolCalls: assembled.toolCalls satisfies ToolCallInfo[],
   }
 }
