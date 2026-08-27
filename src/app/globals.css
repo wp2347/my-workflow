@@ -60,6 +60,8 @@
   --color-node-cron-bg: var(--node-cron-bg);
   --color-node-music: var(--node-music);
   --color-node-music-bg: var(--node-music-bg);
+  --color-node-knowledge: var(--node-knowledge);
+  --color-node-knowledge-bg: var(--node-knowledge-bg);
   --color-canvas-dot: var(--canvas-dot);
   --color-canvas-edge: var(--canvas-edge);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -127,6 +129,8 @@
   --node-cron-bg: #e6f5f2;
   --node-music: #c2557e;
   --node-music-bg: #fbeef4;
+  --node-knowledge: #4a8ea1;
+  --node-knowledge-bg: #e9f4f7;
   /* 画布 */
   --canvas-dot: #c4bedd;
   --canvas-edge: #b3a6e8;

@@ -16,6 +16,7 @@ import { executeConditionNode } from "./nodes/condition"
 import { executeMergeNode } from "./nodes/merge"
 import { executeCronTriggerNode } from "./nodes/cron_trigger"
 import { executeMusicNode } from "./nodes/music"
+import { executeKnowledgeSearchNode } from "./nodes/knowledge_search"
 
 // ============================================================
 // 节点执行器注册表
@@ -32,6 +33,7 @@ const nodeExecutors: Record<string, NodeExecutor> = {
   merge: executeMergeNode,
   cron_trigger: executeCronTriggerNode,
   music: executeMusicNode,
+  knowledge_search: executeKnowledgeSearchNode,
 }
 
 /**

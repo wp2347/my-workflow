@@ -17,6 +17,7 @@ import { CredentialSelect } from "@/components/panels/CredentialSelect"
 import { LocalDirPicker } from "@/components/panels/LocalDirPicker"
 import { MusicPlayer } from "@/components/music/MusicPlayer"
 import { LlmConfig } from "@/components/panels/configs/LlmConfig"
+import { KnowledgeSearchConfig } from "@/components/panels/configs/KnowledgeSearchConfig"
 
 interface NodeConfigPanelProps { node: WorkflowNode }
 
@@ -149,6 +150,9 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
 
       {/* ===== LLM NODE ===== */}
       {node.data.type === "llm" && <LlmConfig node={node} />}
+
+      {/* ===== KNOWLEDGE SEARCH NODE ===== */}
+      {node.data.type === "knowledge_search" && <KnowledgeSearchConfig node={node} />}
 
       {/* ===== OUTPUT NODE ===== */}
       {node.data.type === "output" && (

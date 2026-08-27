@@ -27,6 +27,7 @@ import { ConditionNodeComponent } from "@/components/nodes/ConditionNode"
 import { MergeNodeComponent } from "@/components/nodes/MergeNode"
 import { CronTriggerNodeComponent } from "@/components/nodes/CronTriggerNode"
 import { MusicNodeComponent } from "@/components/nodes/MusicNode"
+import { KnowledgeSearchNodeComponent } from "@/components/nodes/KnowledgeSearchNode"
 
 const nodeTypes = {
   input: InputNodeComponent,
@@ -38,6 +39,7 @@ const nodeTypes = {
   merge: MergeNodeComponent,
   cron_trigger: CronTriggerNodeComponent,
   music: MusicNodeComponent,
+  knowledge_search: KnowledgeSearchNodeComponent,
 }
 
 export function Canvas() {
@@ -149,7 +151,7 @@ function CanvasInner() {
   )
 }
 
-function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music"): Record<string, unknown> {
+function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music" | "knowledge_search"): Record<string, unknown> {
   switch (type) {
     case "input":
       return { name: "message", type: "text", required: true }
@@ -193,5 +195,7 @@ function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" |
         audioUrlField: "data.audio_url",
         metadataField: "data.metadata",
       }
+    case "knowledge_search":
+      return { knowledgeId: "", topK: 3, queryTemplate: "" }
   }
 }

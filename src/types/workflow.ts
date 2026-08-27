@@ -13,7 +13,7 @@ export interface WorkflowConfig {
 }
 
 /** 节点类型联合类型 —— 添加新节点时需同步更新 */
-export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music"
+export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music" | "knowledge_search"
 
 /** 节点 data 字段结构 */
 export interface WorkflowNodeData extends Record<string, unknown> {
@@ -113,6 +113,14 @@ export interface MusicNodeConfig {
   audioUrlField: string
   metadataField: string
   credentialId?: string
+}
+
+export interface KnowledgeSearchNodeConfig {
+  /** 知识库文档 ID；空 = 全库检索 */
+  knowledgeId?: string
+  topK: number
+  /** 作为输出上下文的查询模板，支持 {{ }} 占位；空 = 拼接上游 raw 输出 */
+  queryTemplate?: string
 }
 
 // ---- 执行相关类型 ----
