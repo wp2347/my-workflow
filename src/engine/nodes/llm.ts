@@ -16,6 +16,7 @@ import { loadSkills } from "@/engine/extensions/skill-loader"
 import { renderPrompts } from "@/engine/extensions/prompt-renderer"
 import { loadMcpExtensions } from "@/engine/extensions/mcp-manager"
 import { assembleToolCallSteps, type SdkStepLike } from "@/engine/nodes/llm-steps"
+import { searchKnowledge } from "@/lib/rag"
 
 // 内存中的多轮对话历史（按 workflowId + nodeId 分组）
 const conversationMemory = new Map<string, Array<{ role: string; content: string }>>()
@@ -134,16 +135,12 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   const memory = Math.min((config.memory as number) ?? 0, 20)
   const jsonMode = (config.jsonMode as boolean) ?? false
 
-  // ===== RAG: 知识库检索增强 =====
+  // ===== RAG: 知识库检索增强（直接函数调用，无 HTTP 自调用）=====
   let finalSystem = systemPrompt
   if (knowledgeId) {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/rag/search`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: userInput, topK: 3 }),
-      })
-      const data = await res.json() as { results?: Array<{ content: string }> }
-      const ctx = (data.results || []).map((c, i) => `[片段${i + 1}]\n${c.content}`).join("\n\n")
+      const results = await searchKnowledge(userInput, 3)
+      const ctx = results.map((c, i) => `[片段${i + 1}]\n${c.content}`).join("\n\n")
       if (ctx) finalSystem = `${systemPrompt}\n\n参考知识库：\n${ctx}`
     } catch {}
   }
