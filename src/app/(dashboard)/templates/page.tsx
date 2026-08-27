@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { LayoutTemplate, Loader2, Music, ArrowRight, Newspaper, Languages, GitCompare, Network, BellRing } from "lucide-react"
+import { LayoutTemplate, Loader2, Music, ArrowRight, Newspaper, Languages, GitCompare, Network, BellRing, FileText, Table, Presentation, FolderSearch2, ChartPie } from "lucide-react"
 import { useTranslation } from "@/i18n"
 
 interface TemplateItem {
@@ -23,6 +23,11 @@ const iconMap: Record<string, React.ReactNode> = {
   GitCompare: <GitCompare className="h-6 w-6" />,
   Network: <Network className="h-6 w-6" />,
   BellRing: <BellRing className="h-6 w-6" />,
+  FileText: <FileText className="h-6 w-6" />,
+  Table: <Table className="h-6 w-6" />,
+  Presentation: <Presentation className="h-6 w-6" />,
+  FolderSearch2: <FolderSearch2 className="h-6 w-6" />,
+  ChartPie: <ChartPie className="h-6 w-6" />,
 }
 
 export default function TemplatesPage() {

@@ -335,6 +335,14 @@
       "markdownToPptx": {
         "name": "大纲生成 PPT",
         "description": "输入主题，AI 生成 Markdown 大纲并输出 PPT 文件"
+      },
+      "folderBatchSummary": {
+        "name": "文件夹批量摘要报告",
+        "description": "遍历本地文件夹中的所有文档，逐个摘要后汇总生成 Word 报告"
+      },
+      "xlsxDataInsight": {
+        "name": "表格数据洞察 PPT",
+        "description": "读取本地表格（xlsx/csv），AI 分析数据洞察并生成 PPT 演示文稿"
       }
     }
   },

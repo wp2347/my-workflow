@@ -335,6 +335,14 @@
       "markdownToPptx": {
         "name": "Outline to PPT",
         "description": "Enter a topic, AI generates a Markdown outline and a PPT file"
+      },
+      "folderBatchSummary": {
+        "name": "Folder Batch Summary Report",
+        "description": "Walk every document in a local folder, summarize each, and compile a Word report"
+      },
+      "xlsxDataInsight": {
+        "name": "Spreadsheet Insights to PPT",
+        "description": "Read a local spreadsheet (xlsx/csv), let AI analyze insights and generate a slide deck"
       }
     }
   },

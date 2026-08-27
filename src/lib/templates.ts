@@ -7,6 +7,8 @@ import { buildReminderTemplate } from "@/app/api/workflow/template/reminder/temp
 import { buildFileToDocxTemplate } from "@/app/api/workflow/template/file-to-docx/template"
 import { buildDataToXlsxTemplate } from "@/app/api/workflow/template/data-to-xlsx/template"
 import { buildMarkdownToPptxTemplate } from "@/app/api/workflow/template/markdown-to-pptx/template"
+import { buildFolderBatchSummaryTemplate } from "@/app/api/workflow/template/folder-batch-summary/template"
+import { buildXlsxDataInsightTemplate } from "@/app/api/workflow/template/xlsx-data-insight/template"
 import type { Template, TemplateMeta } from "@/app/api/workflow/template/types"
 
 export type { Template, TemplateMeta, TemplateNode, TemplateEdge } from "@/app/api/workflow/template/types"
@@ -87,6 +89,22 @@ export const TEMPLATES: TemplateEntry[] = [
     icon: "Presentation",
     category: "file",
     build: buildMarkdownToPptxTemplate,
+  },
+  {
+    id: "folder-batch-summary",
+    nameKey: "templates.list.folderBatchSummary.name",
+    descriptionKey: "templates.list.folderBatchSummary.description",
+    icon: "FolderSearch2",
+    category: "file",
+    build: buildFolderBatchSummaryTemplate,
+  },
+  {
+    id: "xlsx-data-insight",
+    nameKey: "templates.list.xlsxDataInsight.name",
+    descriptionKey: "templates.list.xlsxDataInsight.description",
+    icon: "ChartPie",
+    category: "file",
+    build: buildXlsxDataInsightTemplate,
   },
 ]
 
