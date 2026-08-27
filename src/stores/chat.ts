@@ -12,6 +12,7 @@ export interface ExecutionNodeState {
   label: string
   status: "idle" | "running" | "completed" | "failed"
   output?: string
+  toolStepCount?: number
 }
 
 interface ChatStore {
