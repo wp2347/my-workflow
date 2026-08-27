@@ -6,6 +6,46 @@ function exportBaseDir(): string {
   return process.env.EXPORT_STORAGE_DIR || path.join(process.cwd(), "storage", "exports")
 }
 
+/** 扩展名按输出格式映射 */
+function extFor(format: string): string {
+  switch (format) {
+    case "markdown": return "md"
+    case "json": return "json"
+    default: return "txt"
+  }
+}
+
+/** output-YYYYMMDD-HHmmss.<ext>；已存在同名时追加毫秒避让 */
+async function uniqueExportName(dir: string, ext: string): Promise<string> {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, "0")
+  const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`
+  let name = `output-${stamp}.${ext}`
+  try {
+    await fs.access(path.join(dir, name))
+    name = `output-${stamp}-${d.getMilliseconds()}.${ext}`
+  } catch { /* 不存在 → 使用默认名 */ }
+  return name
+}
+
+/**
+ * 校验并解析导出目录（spec：本地保存路径校验）：
+ * - 空 → 基础导出目录
+ * - 相对路径 → 锚定在基础目录下，禁止 .. 逃逸基础目录
+ * - 绝对路径 → 视为用户显式指定，直接使用
+ */
+function resolveExportDir(exportPath: string): string {
+  const base = exportBaseDir()
+  if (!exportPath || !exportPath.trim()) return base
+  if (path.isAbsolute(exportPath)) return path.normalize(exportPath)
+  const resolved = path.resolve(base, exportPath)
+  const rel = path.relative(base, resolved)
+  if (rel.startsWith("..") || path.isAbsolute(rel)) {
+    throw new Error(`Invalid exportPath "${exportPath}": relative paths cannot escape the export base directory`)
+  }
+  return resolved
+}
+
 interface MusicResult {
   audioUrl: string
   localPath: string
@@ -91,7 +131,7 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
 
   if (music) {
     if (exportMode === "local") {
-      const dir = (config.exportPath as string) || exportBaseDir()
+      const dir = resolveExportDir((config.exportPath as string) || "")
       await fs.mkdir(dir, { recursive: true })
       await fs.copyFile(music.localPath, path.join(dir, music.fileName))
     } else if (exportMode === "remote") {
@@ -115,9 +155,29 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
     }
   }
 
+  // ===== 文本产物导出（Phase 3 报告链路）：命名规则 + 本地落盘 =====
+  const raw = typeof output === "string" ? output : JSON.stringify(output)
+  let fileName: string | undefined
+  let localPath: string | undefined
+
+  if (!music && exportMode === "local") {
+    const dir = resolveExportDir((config.exportPath as string) || "")
+    await fs.mkdir(dir, { recursive: true })
+    fileName = await uniqueExportName(dir, extFor(format))
+    localPath = path.join(dir, fileName)
+    await fs.writeFile(localPath, raw)
+  } else if (!music && exportMode === "download") {
+    // download 模式也给出统一命名，供前端保存时使用
+    const d = new Date()
+    const p = (n: number) => String(n).padStart(2, "0")
+    fileName = `output-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${extFor(format)}`
+  }
+
   return {
     output,
-    raw: typeof output === "string" ? output : JSON.stringify(output),
+    raw,
     format,
+    ...(fileName ? { fileName } : {}),
+    ...(localPath ? { localPath } : {}),
   }
 }

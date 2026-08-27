@@ -97,4 +97,68 @@ describe("executeOutputNode", () => {
       executeOutputNode(makeNode({ format: "text", template: "", exportMode: "remote", exportPath: "", remoteUrl: "" }), makeCtxWithMusic())
     ).rejects.toThrow(/remoteUrl is empty/i)
   })
+
+  // ===== 文本输出本地导出（Phase 3：报告链路）=====
+
+  function makeCtxWithText(format: string): ExecutionContext {
+    const ctx: ExecutionContext = { workflowId: "wf", executionId: "e2", input: {}, nodeResults: new Map(), logs: [] }
+    const raw = format === "json" ? '{"a":1}' : "# 报告\n\n正文内容"
+    ctx.nodeResults.set("llm-1", { raw })
+    return ctx
+  }
+
+  it("local 模式无 music：文本输出写入导出目录，返回 fileName/localPath", async () => {
+    const res = await executeOutputNode(
+      makeNode({ format: "markdown", template: "", exportMode: "local", exportPath: "", remoteUrl: "" }),
+      makeCtxWithText("markdown"),
+    ) as Record<string, unknown>
+
+    expect(res.localPath).toBeTruthy()
+    expect(res.fileName).toMatch(/^output-\d{8}-\d{6}\.md$/)
+    const written = await fs.readFile(res.localPath as string, "utf-8")
+    expect(written).toContain("# 报告")
+  })
+
+  it("local 模式文本导出的扩展名随 format 变化（json/txt）", async () => {
+    const res = await executeOutputNode(
+      makeNode({ format: "json", template: "", exportMode: "local", exportPath: "", remoteUrl: "" }),
+      makeCtxWithText("json"),
+    ) as Record<string, unknown>
+    expect((res.fileName as string).endsWith(".json")).toBe(true)
+  })
+
+  it("local 模式文本导出：连续两次执行文件均可读", async () => {
+    const node = makeNode({ format: "text", template: "", exportMode: "local", exportPath: "", remoteUrl: "" })
+    const r1 = await executeOutputNode(node, makeCtxWithText("text")) as Record<string, unknown>
+    const r2 = await executeOutputNode(node, makeCtxWithText("text")) as Record<string, unknown>
+    expect(r1.localPath).toBeTruthy()
+    expect(r2.localPath).toBeTruthy()
+    expect(await fs.readFile(r2.localPath as string, "utf-8")).toContain("正文内容")
+  })
+
+  it("路径校验：exportPath 相对路径含 .. 逃逸基础目录时拒绝", async () => {
+    await expect(
+      executeOutputNode(
+        makeNode({ format: "text", template: "", exportMode: "local", exportPath: "../../etc", remoteUrl: "" }),
+        makeCtxWithText("text"),
+      )
+    ).rejects.toThrow(/exportPath/i)
+  })
+
+  it("路径校验：合法的 exportPath 子目录自动创建并写入", async () => {
+    const res = await executeOutputNode(
+      makeNode({ format: "text", template: "", exportMode: "local", exportPath: path.join(tmpDir, "reports", "2026"), remoteUrl: "" }),
+      makeCtxWithText("text"),
+    ) as Record<string, unknown>
+    const written = await fs.readFile(res.localPath as string, "utf-8")
+    expect(written).toContain("# 报告")
+  })
+
+  it("下载命名：fileName 以 output-<时间戳> 规则生成", async () => {
+    const res = await executeOutputNode(
+      makeNode({ format: "markdown", template: "", exportMode: "download", exportPath: "", remoteUrl: "" }),
+      makeCtxWithText("markdown"),
+    ) as Record<string, unknown>
+    expect(res.fileName).toMatch(/^output-\d{14}\.md$/)
+  })
 })
