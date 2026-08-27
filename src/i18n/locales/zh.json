@@ -140,7 +140,9 @@
     "knowledgePlaceholder": "不使用知识库",
     "memory": "多轮对话记忆",
     "jsonMode": "JSON 模式输出",
-    "functionCalling": "工具调用（天气查询等）",
+    "functionCalling": "内置工具调用（天气查询·示例）",
+    "agentMaxSteps": "工具循环上限",
+    "agentMaxStepsHint": "单次执行中模型与工具的最大交互轮数（1-20，默认 8）",
     "httpAuth": "认证设置",
     "authNone": "无认证",
     "authBearer": "Bearer Token",
@@ -448,7 +450,10 @@
     "title": "执行详情",
     "completed": "成功",
     "failed": "失败",
-    "output": "输出数据"
+    "output": "输出数据",
+    "toolSteps": "工具调用步骤",
+    "argsSummary": "参数",
+    "resultSummary": "结果"
   },
   "credentials": {
     "title": "凭证管理",

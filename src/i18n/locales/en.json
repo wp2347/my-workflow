@@ -140,7 +140,9 @@
     "knowledgePlaceholder": "No knowledge base",
     "memory": "Conversation Memory",
     "jsonMode": "JSON Mode",
-    "functionCalling": "Function Calling (Weather)",
+    "functionCalling": "Built-in tool calling (weather · example)",
+    "agentMaxSteps": "Tool loop limit",
+    "agentMaxStepsHint": "Max model-tool interaction rounds per run (1-20, default 8)",
     "httpAuth": "Authentication",
     "authNone": "None",
     "authBearer": "Bearer Token",
@@ -448,7 +450,10 @@
     "title": "Execution Details",
     "completed": "Success",
     "failed": "Failed",
-    "output": "Output Data"
+    "output": "Output Data",
+    "toolSteps": "Tool Call Steps",
+    "argsSummary": "Arguments",
+    "resultSummary": "Result"
   },
   "credentials": {
     "title": "Credentials",
