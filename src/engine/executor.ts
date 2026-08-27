@@ -17,6 +17,9 @@ import { executeMergeNode } from "./nodes/merge"
 import { executeCronTriggerNode } from "./nodes/cron_trigger"
 import { executeMusicNode } from "./nodes/music"
 import { executeKnowledgeSearchNode } from "./nodes/knowledge_search"
+import { executeCodeNode } from "./nodes/code"
+import { executeDelayNode } from "./nodes/delay"
+import { executeLoopNode } from "./nodes/loop"
 
 // ============================================================
 // 节点执行器注册表
@@ -34,6 +37,9 @@ const nodeExecutors: Record<string, NodeExecutor> = {
   cron_trigger: executeCronTriggerNode,
   music: executeMusicNode,
   knowledge_search: executeKnowledgeSearchNode,
+  code: executeCodeNode,
+  delay: executeDelayNode,
+  loop: executeLoopNode,
 }
 
 /**

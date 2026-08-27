@@ -71,7 +71,13 @@
       "drag": "Drag nodes to canvas",
       "connect": "Connect nodes together",
       "click": "Click to configure"
-    }
+    },
+    "code": "Code",
+    "codeDesc": "Run custom JS to transform data",
+    "delay": "Delay",
+    "delayDesc": "Pause for a given number of milliseconds",
+    "loop": "Loop",
+    "loopDesc": "Iterate over arrays (max 1000 items)"
   },
   "config": {
     "selectNode": "Select a node on the canvas to configure",
@@ -249,7 +255,19 @@
     "folderSelectHint": "Click a folder to enter; selecting adds it to the read whitelist",
     "folderLoading": "Loading…",
     "folderEmpty": "Empty or no permission",
-    "folderChoose": "Choose Folder"
+    "folderChoose": "Choose Folder",
+    "codeScript": "JS Script",
+    "codeScriptHint": "Available: items (upstream array), input (workflow input), query (upstream text). Must return a value.",
+    "codeTimeout": "Timeout (ms)",
+    "codeTimeoutHint": "Loops are force-terminated on timeout (50-30000)",
+    "codeSandboxHint": "⚠️ Security note: scripts can only access injected variables; require/process/global are forbidden. This is not a hard sandbox — do not run untrusted code.",
+    "delayDuration": "Duration (ms)",
+    "delayDurationHint": "Max 5 minutes (300000ms)",
+    "loopSource": "Array source expression",
+    "loopSourceHint": "Reference an upstream array output, or paste a JSON array string",
+    "loopItemTemplate": "Per-item template",
+    "loopItemTemplateHint": "$item is the current element; empty means the item itself",
+    "loopLimitHint": "For safety, a single loop runs at most 1000 items."
   },
   "audioResult": {
     "preview": "Preview",

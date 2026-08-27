@@ -13,6 +13,9 @@ export const NODE_ICON_CLASS: Record<NodeType, string> = {
   cron_trigger: "rounded-md p-1 bg-node-cron-bg text-node-cron",
   music: "rounded-md p-1 bg-node-music-bg text-node-music",
   knowledge_search: "rounded-md p-1 bg-node-knowledge-bg text-node-knowledge",
+  code: "rounded-md p-1 bg-node-code-bg text-node-code",
+  delay: "rounded-md p-1 bg-node-delay-bg text-node-delay",
+  loop: "rounded-md p-1 bg-node-loop-bg text-node-loop",
 }
 
 export const NODE_HANDLE_CLASS: Record<NodeType, string> = {
@@ -26,6 +29,9 @@ export const NODE_HANDLE_CLASS: Record<NodeType, string> = {
   cron_trigger: "!w-3 !h-3 !border-2 !border-background !bg-node-cron",
   music: "!w-3 !h-3 !border-2 !border-background !bg-node-music",
   knowledge_search: "!w-3 !h-3 !border-2 !border-background !bg-node-knowledge",
+  code: "!w-3 !h-3 !border-2 !border-background !bg-node-code",
+  delay: "!w-3 !h-3 !border-2 !border-background !bg-node-delay",
+  loop: "!w-3 !h-3 !border-2 !border-background !bg-node-loop",
 }
 
 export function nodeCard(selected: boolean): string {

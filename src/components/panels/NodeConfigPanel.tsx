@@ -18,6 +18,9 @@ import { LocalDirPicker } from "@/components/panels/LocalDirPicker"
 import { MusicPlayer } from "@/components/music/MusicPlayer"
 import { LlmConfig } from "@/components/panels/configs/LlmConfig"
 import { KnowledgeSearchConfig } from "@/components/panels/configs/KnowledgeSearchConfig"
+import { CodeConfig } from "@/components/panels/configs/CodeConfig"
+import { DelayConfig } from "@/components/panels/configs/DelayConfig"
+import { LoopConfig } from "@/components/panels/configs/LoopConfig"
 
 interface NodeConfigPanelProps { node: WorkflowNode }
 
@@ -153,6 +156,15 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
 
       {/* ===== KNOWLEDGE SEARCH NODE ===== */}
       {node.data.type === "knowledge_search" && <KnowledgeSearchConfig node={node} />}
+
+      {/* ===== CODE NODE ===== */}
+      {node.data.type === "code" && <CodeConfig node={node} />}
+
+      {/* ===== DELAY NODE ===== */}
+      {node.data.type === "delay" && <DelayConfig node={node} />}
+
+      {/* ===== LOOP NODE ===== */}
+      {node.data.type === "loop" && <LoopConfig node={node} />}
 
       {/* ===== OUTPUT NODE ===== */}
       {node.data.type === "output" && (

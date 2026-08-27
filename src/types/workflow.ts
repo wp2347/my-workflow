@@ -13,7 +13,7 @@ export interface WorkflowConfig {
 }
 
 /** 节点类型联合类型 —— 添加新节点时需同步更新 */
-export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music" | "knowledge_search"
+export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music" | "knowledge_search" | "code" | "delay" | "loop"
 
 /** 节点 data 字段结构 */
 export interface WorkflowNodeData extends Record<string, unknown> {
@@ -121,6 +121,25 @@ export interface KnowledgeSearchNodeConfig {
   topK: number
   /** 作为输出上下文的查询模板，支持 {{ }} 占位；空 = 拼接上游 raw 输出 */
   queryTemplate?: string
+}
+
+export interface CodeNodeConfig {
+  /** JS 脚本（可用变量：input/items/query） */
+  code: string
+  /** 超时毫秒（50~30000，默认 3000）；含循环的脚本走 worker 通道强制打断 */
+  timeoutMs?: number
+}
+
+export interface DelayNodeConfig {
+  /** 延时毫秒（上限 5 分钟，默认 1000） */
+  durationMs?: number
+}
+
+export interface LoopNodeConfig {
+  /** 数组来源表达式（如 {{ $node.knowledge_search-1.results }} 或 JSON 数组字符串） */
+  sourcePath: string
+  /** 逐项求值模板，$item 为当前项；空 = 取项本身 */
+  itemTemplate?: string
 }
 
 // ---- 执行相关类型 ----

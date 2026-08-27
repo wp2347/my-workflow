@@ -62,6 +62,12 @@
   --color-node-music-bg: var(--node-music-bg);
   --color-node-knowledge: var(--node-knowledge);
   --color-node-knowledge-bg: var(--node-knowledge-bg);
+  --color-node-code: var(--node-code);
+  --color-node-code-bg: var(--node-code-bg);
+  --color-node-delay: var(--node-delay);
+  --color-node-delay-bg: var(--node-delay-bg);
+  --color-node-loop: var(--node-loop);
+  --color-node-loop-bg: var(--node-loop-bg);
   --color-canvas-dot: var(--canvas-dot);
   --color-canvas-edge: var(--canvas-edge);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -131,6 +137,12 @@
   --node-music-bg: #fbeef4;
   --node-knowledge: #4a8ea1;
   --node-knowledge-bg: #e9f4f7;
+  --node-code: #5069b8;
+  --node-code-bg: #edf0fa;
+  --node-delay: #64748b;
+  --node-delay-bg: #eef1f5;
+  --node-loop: #b8703a;
+  --node-loop-bg: #fbf1ea;
   /* 画布 */
   --canvas-dot: #c4bedd;
   --canvas-edge: #b3a6e8;

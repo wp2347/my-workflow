@@ -66,7 +66,7 @@ describe("executeLoopNode", () => {
     const out = await executeLoopNode(makeNode({ sourcePath: "{{ x }}", itemTemplate: "{{ $item }}" }), makeCtx()) as Record<string, unknown>
     expect(out.count).toBe(1000)
     expect(out.truncated).toBe(true)
-    expect(out.raw.split("\n")).toHaveLength(1000)
+    expect((out.raw as string).split("\n")).toHaveLength(1000)
   })
 
   it("来源非数组 → 返回 error 提示配置", async () => {

@@ -1,4 +1,4 @@
-import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
+import type { ExecutionContext, NodeExecutor } from "@/types/workflow"
 import { resolveExpression } from "@/lib/expression"
 
 /** spec §6 硬性要求：迭代上限硬编码，防死循环/资源失控 */

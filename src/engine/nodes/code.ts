@@ -1,5 +1,5 @@
 import { Worker } from "worker_threads"
-import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
+import type { NodeExecutor } from "@/types/workflow"
 import { resolveExpression } from "@/lib/expression"
 
 /**
@@ -40,7 +40,6 @@ function runOnMainThread(
   code: string,
   ctxData: { input: unknown; items: unknown; query: string },
 ): unknown {
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
   const fn = new Function("input", "items", "query", `"use strict";\n${code}`)
   return fn(ctxData.input, ctxData.items, ctxData.query)
 }

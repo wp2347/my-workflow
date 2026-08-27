@@ -1,4 +1,4 @@
-import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
+import type { NodeExecutor } from "@/types/workflow"
 
 const DEFAULT_DELAY_MS = 1000
 const MAX_DELAY_MS = 5 * 60 * 1000 // spec：延时范围限制（最大 5 分钟）

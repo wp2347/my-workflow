@@ -71,7 +71,13 @@
       "drag": "拖拽节点到画布",
       "connect": "连接节点",
       "click": "点击进行配置"
-    }
+    },
+    "code": "代码执行",
+    "codeDesc": "运行自定义 JS 脚本处理数据",
+    "delay": "延时等待",
+    "delayDesc": "暂停指定毫秒后继续执行",
+    "loop": "循环迭代",
+    "loopDesc": "遍历数组逐项处理，上限 1000 次"
   },
   "config": {
     "selectNode": "点击画布上的节点进行配置",
@@ -249,7 +255,19 @@
     "folderSelectHint": "点击文件夹进入，选择后自动加入读取白名单",
     "folderLoading": "加载中…",
     "folderEmpty": "此目录为空或无访问权限",
-    "folderChoose": "选择此文件夹"
+    "folderChoose": "选择此文件夹",
+    "codeScript": "JS 脚本",
+    "codeScriptHint": "可用变量：items（上游数组）、input（工作流输入）、query（上游文本）。需 return 返回结果。",
+    "codeTimeout": "超时（毫秒）",
+    "codeTimeoutHint": "含循环的脚本超时后会被强制终止（50-30000）",
+    "codeSandboxHint": "⚠️ 安全提示：脚本能访问的数据仅限注入变量；require/process/global 均被禁止。此执行不是强沙箱，请勿运行不可信代码。",
+    "delayDuration": "延时（毫秒）",
+    "delayDurationHint": "最长 5 分钟（300000ms）",
+    "loopSource": "数组来源表达式",
+    "loopSourceHint": "引用上游的数组输出，或直接填 JSON 数组字符串",
+    "loopItemTemplate": "逐项模板",
+    "loopItemTemplateHint": "$item 为当前项；留空取项本身",
+    "loopLimitHint": "为防止失控，单次循环最多 1000 项。"
   },
   "audioResult": {
     "preview": "预览",
