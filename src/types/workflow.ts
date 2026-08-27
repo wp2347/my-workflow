@@ -57,6 +57,8 @@ export interface LLMNodeConfig {
   temperature: number
   maxTokens: number
   credentialId?: string
+  /** 工具调用最大交互轮数（1-20，默认 8）；无工具时无效 */
+  maxSteps?: number
 }
 
 export interface ConditionNodeConfig {
@@ -115,6 +117,23 @@ export interface MusicNodeConfig {
 
 // ---- 执行相关类型 ----
 
+// ---- Agent 工具调用步骤 ----
+
+/** 一次工具调用的日志记录（写入 ExecutionLog.steps） */
+export interface ToolCallStep {
+  toolName: string
+  argsSummary: string      // 参数 JSON 摘要（超长截断）
+  resultSummary: string    // 结果 JSON 摘要（超长截断）
+  durationMs: number
+}
+
+/** 工具调用概要（随节点输出发给下游节点/调试面板使用） */
+export interface ToolCallInfo {
+  name: string
+  args?: unknown
+  summary: string
+}
+
 /** 单节点执行日志 */
 export interface ExecutionLog {
   nodeId: string
@@ -125,6 +144,7 @@ export interface ExecutionLog {
   error?: string
   timestamp: string
   durationMs?: number
+  steps?: ToolCallStep[]   // Agent 工具调用明细（仅工具型节点产出）
 }
 
 /** 工作流执行结果 */
