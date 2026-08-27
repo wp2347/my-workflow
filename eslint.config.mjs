@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // git worktree 副本，避免重复扫描陈旧代码
+    ".worktrees/**",
   ]),
 ]);
 
