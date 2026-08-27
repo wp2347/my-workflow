@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AudioResultCard } from "@/components/panels/AudioResultCard"
 import { useTranslation } from "@/i18n"
-import { Loader2, CheckCircle, XCircle, ArrowLeft, Clock } from "lucide-react"
+import type { ToolCallStep } from "@/types/workflow"
+import { Loader2, CheckCircle, XCircle, ArrowLeft } from "lucide-react"
 
 export default function ExecutionDetailPage() {
   const { t } = useTranslation()
@@ -77,6 +78,26 @@ export default function ExecutionDetailPage() {
                   <div className="mt-2 p-2 rounded bg-destructive/10 dark:bg-destructive/20 text-xs text-destructive font-mono">
                     {String(log.error).substring(0, 200)}
                   </div>
+                )}
+
+                {Array.isArray(log.steps) && (log.steps as ToolCallStep[]).length > 0 && (
+                  <details className="mt-2 text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      {t("historyDetail.toolSteps")} ({(log.steps as ToolCallStep[]).length})
+                    </summary>
+                    <div className="mt-1 space-y-1.5 p-2 rounded bg-muted font-mono text-[11px]">
+                      {(log.steps as ToolCallStep[]).map((step, idx) => (
+                        <details key={idx}>
+                          <summary className="flex items-center gap-2 cursor-pointer">
+                            <span className="font-semibold">{idx + 1}. {step.toolName}</span>
+                            <Badge variant="secondary" className="text-[10px] px-1 py-0">{step.durationMs}ms</Badge>
+                          </summary>
+                          <p className="mt-1 break-all"><span className="text-muted-foreground">{t("historyDetail.argsSummary")}:</span> {step.argsSummary}</p>
+                          <p className="break-all"><span className="text-muted-foreground">{t("historyDetail.resultSummary")}:</span> {step.resultSummary}</p>
+                        </details>
+                      ))}
+                    </div>
+                  </details>
                 )}
 
                 {(() => {
