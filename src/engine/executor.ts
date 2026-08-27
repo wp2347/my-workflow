@@ -208,6 +208,14 @@ export async function executeWorkflow(
         log.output = result
         log.durationMs = Date.now() - startTime
 
+        // Agent 步骤明细抄写：工具型节点若在结果里带了 steps 数组，提升到日志顶层
+        if (result && typeof result === "object") {
+          const steps = (result as Record<string, unknown>).steps
+          if (Array.isArray(steps) && steps.length > 0) {
+            log.steps = steps as ExecutionLog["steps"]
+          }
+        }
+
         // 条件节点分支处理：根据条件结果跳过不匹配的分支
         if (node.data.type === "condition" && result && typeof result === "object") {
           const condResult = (result as Record<string, unknown>).result as boolean
