@@ -24,7 +24,9 @@ export function chunkText(text: string, chunkSize = 500, overlap = 50): string[]
     end = start + breakPoint
     if (end <= start) end = start + chunkSize
     chunks.push(text.slice(start, Math.min(end, text.length)).trim())
-    start = end - overlap
+    const next = end - overlap
+    // 保证游标单调前进：overlap 回退可能使起点倒退（边界点靠后时），死循环保护
+    start = next > start ? next : start + 1
     if (start < 0) start = 0
   }
   return chunks.filter(c => c.length > 10)
