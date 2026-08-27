@@ -42,7 +42,10 @@ My Workflow 是类 Dify/Coze 的可视化 AI 工作流平台（Next.js 16 + Reac
 | Agent 能力形态 | **增强现有 LLM 节点**，不新增节点类型 |
 | 首要场景 | 文件批量处理 → 报告导出链路；其余场景后续都要完善 |
 | 路线组织 | **方案 C 混合纵切**：功能按序推进，每个 Phase 强制捆绑对应模块的质量任务 |
+| 节点配置组件规则 | 即日起**所有新增/改动的节点配置一律使用独立配置组件**（`panels/configs/XxxConfig.tsx`），禁止再向 NodeConfigPanel.tsx 追加内容 |
 | 长期愿景 | 功能完善的 AI 工作流平台 |
+
+每个 Phase 完成前必须通过质量门禁：`npm run typecheck` / `lint` / `test` 全绿；新增 UI 文案同步 `zh.json` / `en.json`。
 
 ## 3. Phase 1 —— LLM 节点 Agent 化增强（首个实施阶段）
 
@@ -55,30 +58,42 @@ My Workflow 是类 Dify/Coze 的可视化 AI 工作流平台（Next.js 16 + Reac
 | 内置天气演示工具 | 与正式能力混在一起 | 移入「内置工具」分组，UI 上明确标注为示例 |
 | 输出结构 | `{text, raw, model, usage}` | 增加 `toolCalls: [{name, args, summary}]` |
 
-类型同步：`ExecutionLog` 新增可选 `steps` 字段（`src/types/workflow.ts`）；`LLMNodeConfig` 新增 `maxSteps`。
+类型同步（`src/types/workflow.ts`）：
+- `ExecutionLog` 新增可选 `steps?: ToolCallStep[]`，其中 `ToolCallStep = { toolName: string; argsSummary: string; resultSummary: string; durationMs: number }`（摘要超 500 字符截断，避免日志膨胀）
+- `LLMNodeConfig` 新增 `maxSteps: number`
 
 ### 3.2 UI 改动
 
-- LLM 节点配置从 `NodeConfigPanel.tsx` 拆出为独立组件（如 `panels/configs/LlmConfig.tsx`），本次仅拆 LLM 部分，其余节点由后续 Phase 各自带走
-- 调试/历史面板展示工具调用步骤明细
+- LLM 节点配置从 `NodeConfigPanel.tsx` 拆出为独立组件 `panels/configs/LlmConfig.tsx`
+- 工具调用步骤明细展示于两处：执行历史详情页（展开节点日志可见）+ 编辑器聊天调试面板
 
 ### 3.3 测试
 
-- `llm.test.ts` 补多步工具调用测试（mock 模型验证 maxSteps 行为、steps 记录正确性）
+- `llm.test.ts` 补多步工具调用测试（mock 模型验证：maxSteps 截停行为、steps 记录完整、摘要截断、无工具时不产生 steps）
 
-### 3.4 验收标准
+### 3.4 已知限制（明确记录、本期不解决）
 
-- 跑通「filesystem MCP 列目录 → 读文件 → 总结」Agent 工作流，历史页可见每轮工具调用明细
-- 新增文案同步 `zh.json` / `en.json`
-- `npm run typecheck / lint / test` 全绿
+- 对话记忆 `conversationMemory` 为进程内 Map：dev server 重启即丢失；与 cron worker 分属不同进程不共享。列为已知限制，未来如需持久化再引入存储方案
+- 内置天气工具依赖公网 wttr.in，离线环境不可用（标注为示例后可接受）
+
+### 3.5 验收标准
+
+- 跑通「filesystem MCP 列目录 → 读文件 → 总结」Agent 工作流，历史页与聊天调试面板均可见每轮工具调用明细
+- 质量门禁全绿（见第 2 节质量门禁定义）
 
 ## 4. Phase 2 —— RAG 知识库落地
 
 - 知识库页面完善：文档上传（txt/md/pdf 文本抽取）→ 分块 → embedding 入库
 - LLM 节点 `knowledgeId` 检索改为直接函数调用，移除对自身 `/api/rag/search` 的 HTTP 自调用
-- 新增独立**知识库检索节点**（检索结果作为变量传给下游）
+- 新增独立**知识库检索节点**（检索结果作为变量传给下游），配置使用独立组件（见第 2 节规则）
 - 质量捆绑：`chunker.ts` / `embedding.ts` 补测试
-- 前置确认：embedding 模型供应商配置（OpenAI 或兼容接口；注意 schema 为 `vector(1536)`，若换模型需同步维度）
+
+前置决策点：
+
+- **embedding 模型**：默认 OpenAI text-embedding-3-small（1536 维，与现有 schema 匹配）；若用户选择其他维度模型，需同步修改 schema 向量维度并重建已有向量数据（需 db push + 重新入库）
+- **向量索引**：数据量 <1 万条时用 pgvector 精确扫描即可；超过后评估建 HNSW 索引（本期不建）
+
+验收标准：上传一篇 txt 文档完成入库并可被检索节点召回；LLM 节点绑 knowledgeId 后回答能引用文档内容；质量门禁全绿。
 
 ## 5. Phase 3 —— 文件批处理场景链路
 
@@ -86,19 +101,25 @@ My Workflow 是类 Dify/Coze 的可视化 AI 工作流平台（Next.js 16 + Reac
 - 模板库新增 2~3 个端到端模板（如「文件夹批量摘要报告」「表格数据洞察 pptx」）
 - 输出节点导出体验打磨（本地保存路径校验、下载命名规则）
 
+验收标准：从模板一键创建工作流，选中本地文件夹跑通完整链路并产出可打开的 office 文件；质量门禁全绿。
+
 ## 6. Phase 4 —— 控制流与更多节点
 
-- loop/iteration 节点：遍历数组逐项执行下游子流程
-- delay 节点
-- code 节点：JS 受限沙箱（受限执行环境 + 超时控制）
+- loop/iteration 节点：遍历数组逐项执行下游子流程。**必须定义**：数组来源（上游输出取值路径表达式）、最大迭代上限（硬编码上限如 1000，防止死循环/资源失控）、逐项结果如何聚合传给下游
+- delay 节点：延时范围限制（如最大 5 分钟）
+- code 节点：JS 执行。**风险声明**：基于 `new Function` 的隔离不是真沙箱，仅做轻量保护（超时控制 + 禁止 require/process 访问的静态检查）。若未来需要强隔离再迁移 worker_threads 或 isolated-vm，本期不引入新依赖
 - 场景扩展模板：定时资讯汇总→飞书推送、飞书对话助手链路
-- 按 AGENTS.md 节点接入清单执行（8 处注册点 + zh/en 文案）
+- 按 AGENTS.md 节点接入清单执行（8 处注册点 + zh/en 文案）；三种新节点的配置表单均直接建在 `panels/configs/` 下独立文件
+
+验收标准：三个新节点各有模板或示例工作流可跑通；loop 在超过迭代上限时正确报错而非挂死；质量门禁全绿。
 
 ## 7. Phase 5 —— 工程收尾
 
 - README 全面重写：真实架构（扩展系统/packs/MCP/Office/i18n/飞书/Cron）、启动命令与 package.json 实际脚本对齐
-- NodeConfigPanel 完成剩余节点拆分；executor.ts 集成测试补齐
+- NodeConfigPanel 存量节点全部迁出为独立配置组件后移除该大文件；executor.ts 集成测试补齐
 - 执行历史增强：按状态筛选、失败重跑按钮
+
+验收标准：NodeConfigPanel.tsx 拆分完毕删除；README 描述与实际代码结构一致（抽查节点列表、目录树、脚本说明均准确）；质量门禁全绿。
 
 ## 8. 非目标（本期明确不做）
 
