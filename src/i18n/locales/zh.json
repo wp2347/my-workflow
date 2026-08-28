@@ -362,6 +362,10 @@
       "xlsxDataInsight": {
         "name": "表格数据洞察 PPT",
         "description": "读取本地表格（xlsx/csv），AI 分析数据洞察并生成 PPT 演示文稿"
+      },
+      "feishuAssistant": {
+        "name": "飞书对话助手",
+        "description": "飞书群里 @机器人即可获得带工具能力的 AI 助手"
       }
     }
   },

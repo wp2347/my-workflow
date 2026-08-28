@@ -60,4 +60,38 @@ describe("templates registry", () => {
     expect(list.find((t) => t.id === "folder-batch-summary")?.category).toBe("file")
     expect(list.find((t) => t.id === "xlsx-data-insight")?.category).toBe("file")
   })
+
+  // ===== Phase 6 场景模板 =====
+
+  it("feishu-assistant 模板：receive → Agent(filesystem/office) → send reply 三节点闭环", () => {
+    for (const lang of ["zh", "en"]) {
+      const built = getTemplate("feishu-assistant")!.build(lang)
+      expect(built.nodes).toHaveLength(3)
+      expect(built.edges).toHaveLength(2)
+
+      const [recv, llm, send] = built.nodes.map((n) => ({
+        type: n.data.type,
+        config: n.data.config as Record<string, unknown>,
+      }))
+
+      expect(recv.type).toBe("feishu")
+      expect((recv.config.mode as string)).toBe("receive")
+
+      expect(llm.type).toBe("llm")
+      const ext = llm.config.extensions as { skills: Array<{ packId: string }>; mcp: Array<{ packId: string }> }
+      expect(ext.skills.map((s) => s.packId)).toEqual(expect.arrayContaining(["filesystem", "office"]))
+      expect(ext.mcp.map((s) => s.packId)).toEqual(expect.arrayContaining(["filesystem", "office"]))
+      expect(llm.config.maxSteps).toBe(8)
+      expect(String(llm.config.systemPrompt)).toContain("filesystem")
+
+      expect(send.type).toBe("feishu")
+      expect(send.config.mode).toBe("send")
+      expect(String(send.config.message)).toContain("$node.llm-1")
+    }
+  })
+
+  it("feishu-assistant 出现在列表且分类为 automation", () => {
+    const list = listTemplates()
+    expect(list.find((t) => t.id === "feishu-assistant")?.category).toBe("automation")
+  })
 })

@@ -362,6 +362,10 @@
       "xlsxDataInsight": {
         "name": "Spreadsheet Insights to PPT",
         "description": "Read a local spreadsheet (xlsx/csv), let AI analyze insights and generate a slide deck"
+      },
+      "feishuAssistant": {
+        "name": "Feishu Chat Assistant",
+        "description": "A tool-capable AI assistant that answers when @mentioned in a Feishu group"
       }
     }
   },

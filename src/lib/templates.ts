@@ -9,6 +9,7 @@ import { buildDataToXlsxTemplate } from "@/app/api/workflow/template/data-to-xls
 import { buildMarkdownToPptxTemplate } from "@/app/api/workflow/template/markdown-to-pptx/template"
 import { buildFolderBatchSummaryTemplate } from "@/app/api/workflow/template/folder-batch-summary/template"
 import { buildXlsxDataInsightTemplate } from "@/app/api/workflow/template/xlsx-data-insight/template"
+import { buildFeishuAssistantTemplate } from "@/app/api/workflow/template/feishu-assistant/template"
 import type { Template, TemplateMeta } from "@/app/api/workflow/template/types"
 
 export type { Template, TemplateMeta, TemplateNode, TemplateEdge } from "@/app/api/workflow/template/types"
@@ -105,6 +106,14 @@ export const TEMPLATES: TemplateEntry[] = [
     icon: "ChartPie",
     category: "file",
     build: buildXlsxDataInsightTemplate,
+  },
+  {
+    id: "feishu-assistant",
+    nameKey: "templates.list.feishuAssistant.name",
+    descriptionKey: "templates.list.feishuAssistant.description",
+    icon: "Bot",
+    category: "automation",
+    build: buildFeishuAssistantTemplate,
   },
 ]
 
