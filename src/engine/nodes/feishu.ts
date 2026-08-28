@@ -112,8 +112,9 @@ export const executeFeishuNode: NodeExecutor = async (node, context) => {
   finalMessage = resolveExpression(finalMessage, context)
   finalMessage = finalMessage.replace(/@_user_\d+\s*/g, "")
   // Remove user's original message if echoed back by LLM
+  // 仅在用户消息后还有额外内容时去除前缀——否则可能把整条回复误当回显吞掉
   const userMsg = (context.input?.message as string) || ""
-  if (userMsg && finalMessage.startsWith(userMsg)) {
+  if (userMsg && finalMessage.length > userMsg.length && finalMessage.startsWith(userMsg)) {
     finalMessage = finalMessage.slice(userMsg.length).trim()
   }
   finalMessage = finalMessage.trim()
