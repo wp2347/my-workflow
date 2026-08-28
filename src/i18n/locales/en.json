@@ -267,7 +267,8 @@
     "loopSourceHint": "Reference an upstream array output, or paste a JSON array string",
     "loopItemTemplate": "Per-item template",
     "loopItemTemplateHint": "$item is the current element; empty means the item itself",
-    "loopLimitHint": "For safety, a single loop runs at most 1000 items."
+    "loopLimitHint": "For safety, a single loop runs at most 1000 items.",
+    "noConfig": "No configuration available for this node"
   },
   "audioResult": {
     "preview": "Preview",

@@ -267,7 +267,8 @@
     "loopSourceHint": "引用上游的数组输出，或直接填 JSON 数组字符串",
     "loopItemTemplate": "逐项模板",
     "loopItemTemplateHint": "$item 为当前项；留空取项本身",
-    "loopLimitHint": "为防止失控，单次循环最多 1000 项。"
+    "loopLimitHint": "为防止失控，单次循环最多 1000 项。",
+    "noConfig": "该节点暂无配置项"
   },
   "audioResult": {
     "preview": "预览",
