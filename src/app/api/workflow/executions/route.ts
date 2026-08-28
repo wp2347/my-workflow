@@ -6,9 +6,15 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const page = parseInt(searchParams.get("page") || "1")
     const pageSize = parseInt(searchParams.get("pageSize") || "20")
+    const status = searchParams.get("status") || ""
+
+    const where = status && ["pending", "running", "completed", "failed"].includes(status)
+      ? { status }
+      : {}
 
     const [executions, total] = await Promise.all([
       prisma.execution.findMany({
+        where,
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -16,7 +22,7 @@ export async function GET(req: NextRequest) {
           workflow: { select: { name: true } },
         },
       }),
-      prisma.execution.count(),
+      prisma.execution.count({ where }),
     ])
 
     const result = executions.map((e) => ({

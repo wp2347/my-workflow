@@ -478,7 +478,12 @@
     "title": "执行历史",
     "description": "查看所有工作流的执行记录",
     "noExecutions": "暂无执行记录",
-    "noExecutionsDesc": "运行工作流后这里会显示执行历史"
+    "noExecutionsDesc": "运行工作流后这里会显示执行历史",
+    "filterAll": "全部",
+    "filterCompleted": "成功",
+    "filterFailed": "失败",
+    "filterRunning": "运行中",
+    "rerun": "重跑"
   },
   "historyDetail": {
     "notFound": "未找到执行记录",

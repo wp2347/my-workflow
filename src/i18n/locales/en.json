@@ -478,7 +478,12 @@
     "title": "Execution History",
     "description": "View execution records of all workflows",
     "noExecutions": "No execution records",
-    "noExecutionsDesc": "Execution history will appear here after running workflows"
+    "noExecutionsDesc": "Execution history will appear here after running workflows",
+    "filterAll": "All",
+    "filterCompleted": "Completed",
+    "filterFailed": "Failed",
+    "filterRunning": "Running",
+    "rerun": "Re-run"
   },
   "historyDetail": {
     "notFound": "Execution record not found",
