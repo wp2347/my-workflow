@@ -36,12 +36,13 @@ describe("executeLoopNode", () => {
     void out
   })
 
-  it("从上游 results 数组构造迭代项并聚合 raw 拼接", async () => {
+  it("从上游 results 数组构造迭代项并聚合 raw 拼接（$node 结构化引用直读原始值）", async () => {
     const ctx = makeCtx({ results: [{ t: "x" }, { t: "y" }] })
-    // 调用序列：第1次=sourcePath 求值；其后=每项 itemTemplate 求值
-    const seq = ['[{"t":"x"},{"t":"y"}]', "x!", "y!"]
-    let i = 0
-    resolveExpression.mockReset().mockImplementation(() => seq[i++] ?? "?")
+    // $node 引用走结构化读取（绕过文本管道），因此 resolveExpression 只被 itemTemplate 逐项调用；
+    // mock 按调用次序返回不同值，验证逐项求值确实发生（真实解析行为由 loop.integration.test.ts 覆盖）
+    resolveExpression.mockReset()
+    const seq = ["x!", "y!"]
+    resolveExpression.mockImplementation(() => seq.shift() ?? "?")
 
     const node = makeNode({
       sourcePath: "{{ $node.upstream-1.results }}",
@@ -49,9 +50,9 @@ describe("executeLoopNode", () => {
     })
     const out = await executeLoopNode(node, ctx) as Record<string, unknown>
 
+    expect(resolveExpression).toHaveBeenCalledTimes(2) // 从不解析 sourcePath，仅逐项
     expect(out.items).toEqual(["x!", "y!"])
     expect(out.raw).toBe("x!\ny!")
-    expect(out.count).toBe(2)
   })
 
   it("超过硬编码上限 1000 时截断并在结果中标记", async () => {

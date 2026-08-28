@@ -42,6 +42,12 @@ export function resolveExpression(expr: string, context: ExecutionContext): stri
       return String(getByPath(context.input, field) ?? "")
     }
 
+    // {{ $item }} / {{ $item.field }} — 循环节点注入的当前项（存于 input.item）
+    if (exp === "$item" || exp.startsWith("$item.")) {
+      const field = exp.slice("$item".length).replace(/^\./, "")
+      return String(getByPath(context.input, field ? `item.${field}` : "item") ?? "")
+    }
+
     // {{ $env.VAR }}
     if (exp.startsWith("$env.")) {
       return process.env[exp.slice(5)] ?? ""
