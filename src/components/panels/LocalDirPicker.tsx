@@ -26,6 +26,8 @@ interface LocalDirPickerProps {
   onSelect: (dir: string) => Promise<void> | void
 }
 
+const LAST_DIR_KEY = "workflow-fs-last-dir"
+
 export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerProps) {
   const { t } = useTranslation()
   const [listing, setListing] = useState<FsListing | null>(null)
@@ -44,17 +46,31 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
         const err = await res.json()
         throw new Error(err.error || "Failed to list")
       }
-      setListing(await res.json())
+      const data = await res.json() as FsListing
+      setListing(data)
       setSelectedPath(null)
+      // 记住最近访问的目录（顶层盘符视图 path 为 null，不保存）
+      if (data?.path) {
+        try { localStorage.setItem(LAST_DIR_KEY, data.path) } catch {}
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
+      // 记忆的目录已不可访问时清除，下次回到默认起始目录
+      if (dir) {
+        try { localStorage.removeItem(LAST_DIR_KEY) } catch {}
+      }
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    if (open) load("")
+    if (!open) return
+    let last: string | null = null
+    try { last = localStorage.getItem(LAST_DIR_KEY) } catch {}
+    // 延迟到下一宏任务，避免在 effect 内同步 setState
+    const timer = setTimeout(() => { void load(last || "") }, 0)
+    return () => clearTimeout(timer)
   }, [open, load])
 
   const handleConfirm = async () => {

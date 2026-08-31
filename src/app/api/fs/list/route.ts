@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { promises as fs } from "fs"
 import path from "path"
+import os from "os"
 
 const BROWSE_ROOT = process.env.FS_BROWSE_ROOT || (process.platform === "win32" ? "C:\\" : "/")
 const isWin = process.platform === "win32"
+
+/** 默认起始目录：优先桌面，桌面不存在回退用户主目录 */
+function defaultStartDir(): string {
+  const desktop = path.join(os.homedir(), "Desktop")
+  return desktop
+}
 
 interface FsEntry {
   name: string
@@ -59,14 +66,27 @@ export async function GET(req: NextRequest) {
   try {
     const raw = req.nextUrl.searchParams.get("path") || ""
 
-    // 顶层：Windows 显示盘符，POSIX 从根目录开始
+    // 顶层：Windows 显示盘符；POSIX 从桌面开始（桌面不存在则回退主目录）
     if (!raw) {
       if (isWin) {
         const drives = await listDrives()
         return NextResponse.json({ path: null, parent: null, drives, entries: [] })
       }
-      const entries = await listDir("/")
-      return NextResponse.json({ path: "/", parent: null, drives: [], entries })
+      const desktop = defaultStartDir()
+      let start = desktop
+      try {
+        await fs.access(desktop)
+      } catch {
+        start = os.homedir()
+      }
+      try {
+        const entries = await listDir(start)
+        return NextResponse.json({ path: start, parent: path.dirname(start), drives: [], entries })
+      } catch {
+        // 最终回退根目录
+        const entries = await listDir("/")
+        return NextResponse.json({ path: "/", parent: null, drives: [], entries })
+      }
     }
 
     const resolved = path.resolve(raw)
