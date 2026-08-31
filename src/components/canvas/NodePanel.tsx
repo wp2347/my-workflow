@@ -2,6 +2,7 @@
 
 import { type DragEvent } from "react"
 import { Card } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { MessageSquare, Brain, BookOpen, Send, Globe, GitFork, Combine, Timer, ArrowRight, Music, DatabaseZap, Code2, Hourglass, Repeat } from "lucide-react"
 import { type NodeType } from "@/types/workflow"
 import { useTranslation } from "@/i18n"
@@ -52,24 +53,26 @@ export function NodePanel() {
       <h3 className="text-sm font-semibold text-muted-foreground shrink-0">
         {t("canvas.nodes")}
       </h3>
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 pr-0.5">
-        {nodeList.map((node) => (
-          <Card
-            key={node.type}
-            draggable
-            onDragStart={(e) => handleDragStart(e, node.type, node.label)}
-            className="p-3 cursor-grab active:cursor-grabbing hover:border-primary transition-colors shrink-0"
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex-shrink-0 text-primary">{iconMap[node.type]}</div>
-              <div>
-                <div className="text-sm font-medium">{node.label}</div>
-                <div className="text-xs text-muted-foreground">{node.description}</div>
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="flex flex-col gap-2 pr-1 pb-1">
+          {nodeList.map((node) => (
+            <Card
+              key={node.type}
+              draggable
+              onDragStart={(e) => handleDragStart(e, node.type, node.label)}
+              className="p-3 cursor-grab active:cursor-grabbing hover:border-primary transition-colors shrink-0"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex-shrink-0 text-primary">{iconMap[node.type]}</div>
+                <div>
+                  <div className="text-sm font-medium">{node.label}</div>
+                  <div className="text-xs text-muted-foreground">{node.description}</div>
+                </div>
               </div>
-            </div>
-          </Card>
-        ))}
-      </div>
+            </Card>
+          ))}
+        </div>
+      </ScrollArea>
 
       <div className="pt-4 border-t border-border shrink-0">
         <div className="text-xs text-muted-foreground space-y-1">
