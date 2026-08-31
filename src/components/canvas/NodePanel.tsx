@@ -54,7 +54,7 @@ export function NodePanel() {
         {t("canvas.nodes")}
       </h3>
       <ScrollArea className="flex-1 min-h-0" hideScrollbar>
-        <div className="flex flex-col gap-2 pr-1 pb-1">
+        <div className="flex flex-col gap-2 p-px pb-1">
           {nodeList.map((node) => (
             <Card
               key={node.type}
