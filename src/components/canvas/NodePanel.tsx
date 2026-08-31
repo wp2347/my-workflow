@@ -48,28 +48,30 @@ export function NodePanel() {
   }
 
   return (
-    <div className="w-56 border-r border-border bg-card p-4 flex flex-col gap-2">
-      <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+    <div className="w-56 border-r border-border bg-card p-4 flex flex-col gap-2 h-full min-h-0">
+      <h3 className="text-sm font-semibold text-muted-foreground shrink-0">
         {t("canvas.nodes")}
       </h3>
-      {nodeList.map((node) => (
-        <Card
-          key={node.type}
-          draggable
-          onDragStart={(e) => handleDragStart(e, node.type, node.label)}
-          className="p-3 cursor-grab active:cursor-grabbing hover:border-primary transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <div className="flex-shrink-0 text-primary">{iconMap[node.type]}</div>
-            <div>
-              <div className="text-sm font-medium">{node.label}</div>
-              <div className="text-xs text-muted-foreground">{node.description}</div>
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2 pr-0.5">
+        {nodeList.map((node) => (
+          <Card
+            key={node.type}
+            draggable
+            onDragStart={(e) => handleDragStart(e, node.type, node.label)}
+            className="p-3 cursor-grab active:cursor-grabbing hover:border-primary transition-colors shrink-0"
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex-shrink-0 text-primary">{iconMap[node.type]}</div>
+              <div>
+                <div className="text-sm font-medium">{node.label}</div>
+                <div className="text-xs text-muted-foreground">{node.description}</div>
+              </div>
             </div>
-          </div>
-        </Card>
-      ))}
+          </Card>
+        ))}
+      </div>
 
-      <div className="mt-auto pt-4 border-t border-border">
+      <div className="pt-4 border-t border-border shrink-0">
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex items-center gap-1">
             <ArrowRight className="h-3 w-3" />{t("canvas.dragTips.drag")}
