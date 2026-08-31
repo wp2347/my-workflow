@@ -25,7 +25,7 @@ function OutputNode({ id, data, selected }: NodeProps) {
         </div>
         <span className="text-sm font-semibold text-foreground">Output</span>
       </div>
-      {result ? (
+      {result?.audioUrl ? (
         <div className="mt-1 -mx-1">
           <MusicPlayer audioUrl={result.audioUrl} fileName={result.fileName} compact />
         </div>

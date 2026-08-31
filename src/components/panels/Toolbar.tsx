@@ -69,23 +69,33 @@ export function Toolbar() {
       })
       const data = await res.json()
 
-      // 将 output 节点的音频结果写入持久化 store（下次执行时自动覆盖）
+      // 将 output 节点的音频结果与文件产物写入持久化 store（下次执行时自动覆盖）
       let foundAudio: { audioUrl: string; fileName: string } | null = null
       for (const log of data.logs || []) {
         const out = log.output as Record<string, unknown> | null
-        if (out && typeof out === "object" && typeof out.audioUrl === "string") {
-          setNodeResult(workflowId, log.nodeId, {
-            audioUrl: out.audioUrl as string,
-            fileName: (out.fileName as string) || "audio",
+        if (!out || typeof out !== "object") continue
+        const isAudio = typeof out.audioUrl === "string"
+        const isFile = typeof out.filePath === "string"
+        if (isAudio || isFile) {
+          const base = {
+            fileName: (out.fileName as string) || (isFile ? "output.bin" : "audio"),
             metadata: (out.metadata as Record<string, unknown>) || {},
             executionId: data.executionId,
             status: data.status,
             updatedAt: new Date().toISOString(),
-          })
-          if (!foundAudio) {
+          }
+          setNodeResult(workflowId, log.nodeId, isAudio
+            ? { ...base, kind: "audio", audioUrl: out.audioUrl as string }
+            : {
+              ...base, kind: "file",
+              filePath: out.filePath as string,
+              fileSize: (out.fileSize as number) || undefined,
+              preview: typeof out.raw === "string" ? (out.raw as string).slice(0, 2000) : undefined,
+            })
+          if (isAudio && !foundAudio) {
             foundAudio = {
               audioUrl: out.audioUrl as string,
-              fileName: (out.fileName as string) || "audio",
+              fileName: base.fileName,
             }
           }
         }

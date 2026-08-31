@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AudioResultCard } from "@/components/panels/AudioResultCard"
+import { FileResultCard } from "@/components/panels/FileResultCard"
 import { useTranslation } from "@/i18n"
 import type { ToolCallStep } from "@/types/workflow"
 import { Loader2, CheckCircle, XCircle, ArrowLeft } from "lucide-react"
@@ -102,6 +103,22 @@ export default function ExecutionDetailPage() {
 
                 {(() => {
                   const out = log.output as Record<string, unknown> | null
+                  const isFile = out && typeof out === "object" && typeof out.filePath === "string"
+                  if (isFile) {
+                    const clearKey = `file_${id}_${log.nodeId}`
+                    if (clearedKeys.has(clearKey)) return null
+                    return (
+                      <FileResultCard
+                        executionId={id}
+                        nodeId={log.nodeId as string}
+                        fileName={(out!.fileName as string) || "output.bin"}
+                        filePath={out!.filePath as string}
+                        fileSize={(out!.fileSize as number) || undefined}
+                        preview={typeof out!.raw === "string" ? String(out!.raw).slice(0, 2000) : undefined}
+                        onCleared={() => setClearedKeys((prev) => new Set(prev).add(clearKey))}
+                      />
+                    )
+                  }
                   const isAudio = out && typeof out === "object" && typeof out.audioUrl === "string"
                   if (isAudio) {
                     const audioNodeId = (out!.audioUrl as string).match(/[?&]nodeId=([^&]+)/)?.[1] || ""

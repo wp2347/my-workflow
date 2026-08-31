@@ -1,6 +1,6 @@
 import { promises as fs } from "fs"
 import path from "path"
-import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
+import type { ExecutionContext, NodeExecutor } from "@/types/workflow"
 
 function exportBaseDir(): string {
   return process.env.EXPORT_STORAGE_DIR || path.join(process.cwd(), "storage", "exports")
@@ -159,6 +159,8 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
   const raw = typeof output === "string" ? output : JSON.stringify(output)
   let fileName: string | undefined
   let localPath: string | undefined
+  let filePath: string | undefined // storage 根相对路径（供下载/删除 API）
+  let fileSize: number | undefined
 
   if (!music && exportMode === "local") {
     const dir = resolveExportDir((config.exportPath as string) || "")
@@ -166,6 +168,18 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
     fileName = await uniqueExportName(dir, extFor(format))
     localPath = path.join(dir, fileName)
     await fs.writeFile(localPath, raw)
+    try {
+      const stat = await fs.stat(localPath)
+      fileSize = stat.size
+    } catch {
+      /* ignore */
+    }
+    // 计算 storage 根相对路径；文件若在 storage 外则无法通过 storage API 下载
+    const storageRoot = process.env.STORAGE_DIR || path.join(process.cwd(), "storage")
+    const rel = path.relative(storageRoot, localPath)
+    if (rel && !rel.startsWith("..") && !path.isAbsolute(rel)) {
+      filePath = rel.split(path.sep).join("/")
+    }
   } else if (!music && exportMode === "download") {
     // download 模式也给出统一命名，供前端保存时使用
     const d = new Date()
@@ -179,5 +193,7 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
     format,
     ...(fileName ? { fileName } : {}),
     ...(localPath ? { localPath } : {}),
+    ...(filePath ? { filePath } : {}),
+    ...(fileSize !== undefined ? { fileSize } : {}),
   }
 }

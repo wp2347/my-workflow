@@ -1,12 +1,19 @@
 import { create } from "zustand"
 
 export interface RunResult {
-  audioUrl: string
+  audioUrl?: string
   fileName: string
   metadata: Record<string, unknown>
   executionId: string
   status: string
   updatedAt: string
+  // 文件产物（文档/表格/PPT 等 local 导出）
+  filePath?: string
+  fileSize?: number
+  /** 文本类预览内容（md/txt/json），二进制类留空 */
+  preview?: string
+  /** kind: "audio" | "file" */
+  kind?: string
 }
 
 type RunResultsMap = Record<string, Record<string, RunResult>>

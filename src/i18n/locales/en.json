@@ -618,5 +618,8 @@
       "name": "Local File Access",
       "description": "List, read and search local files under the storage/ directory for workflows"
     }
+  },
+  "fileResult": {
+    "binaryHint": "This file is a binary format. Download it below to view locally."
   }
 }
