@@ -48,7 +48,7 @@ export function buildFolderBatchSummaryTemplate(lang: string): Template {
     description: i.description,
     nodes: [
       { id: "input-1", type: "input", position: { x: 100, y: 220 },
-        data: { type: "input", label: i.labelInput, config: { name: "message", type: "text", required: true } } },
+        data: { type: "input", label: i.labelInput, config: { name: "message", type: "file", required: true } } },
       { id: "llm-1", type: "llm", position: { x: 340, y: 220 },
         data: { type: "llm", label: i.labelLLM, config: {
           provider: "deepseek", model: "deepseek-chat", temperature: 0.3,

@@ -268,7 +268,10 @@
     "loopItemTemplate": "Per-item template",
     "loopItemTemplateHint": "$item is the current element; empty means the item itself",
     "loopLimitHint": "For safety, a single loop runs at most 1000 items.",
-    "noConfig": "No configuration available for this node"
+    "noConfig": "No configuration available for this node",
+    "fileBrowseTitle": "Select a local file or folder",
+    "fileSelectedHint": "Click a file to select it; click again to deselect",
+    "fileChoose": "Choose this file"
   },
   "audioResult": {
     "preview": "Preview",

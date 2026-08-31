@@ -32,6 +32,7 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
 
   const load = useCallback(async (dir: string) => {
     setLoading(true)
@@ -44,6 +45,7 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
         throw new Error(err.error || "Failed to list")
       }
       setListing(await res.json())
+      setSelectedPath(null)
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -56,10 +58,12 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
   }, [open, load])
 
   const handleConfirm = async () => {
-    if (!listing?.path) return
+    // 选中的文件优先；否则取当前目录
+    const target = selectedPath ?? listing?.path
+    if (!target) return
     setSaving(true)
     try {
-      await onSelect(listing.path)
+      await onSelect(target)
       onOpenChange(false)
     } finally {
       setSaving(false)
@@ -70,7 +74,7 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t("config.folderBrowseTitle")}</DialogTitle>
+          <DialogTitle>{t("config.fileBrowseTitle")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-2">
@@ -89,8 +93,17 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
               <ArrowUp className="h-3.5 w-3.5 mr-1" />
               {t("config.folderUp")}
             </Button>
-            <span className="text-xs text-muted-foreground">{t("config.folderSelectHint")}</span>
+            <span className="text-xs text-muted-foreground">
+              {selectedPath ? t("config.fileSelectedHint") : t("config.folderSelectHint")}
+            </span>
           </div>
+
+          {selectedPath && (
+            <div className="flex items-center gap-2 rounded-md bg-primary/10 px-3 py-1.5 text-xs font-mono break-all text-foreground">
+              <FileText className="h-3.5 w-3.5 shrink-0 text-primary" />
+              <span>{selectedPath}</span>
+            </div>
+          )}
 
           {listing?.drives.length ? (
             <div className="flex flex-wrap gap-1.5">
@@ -119,22 +132,27 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
             ) : (listing?.entries.length ?? 0) === 0 ? (
               <div className="px-3 py-4 text-xs text-muted-foreground">{t("config.folderEmpty")}</div>
             ) : (
-              listing?.entries.map((entry) => (
-                <button
-                  key={entry.path}
-                  type="button"
-                  onClick={() => entry.isDir && load(entry.path)}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted transition-colors disabled:opacity-60"
-                  disabled={!entry.isDir}
-                >
-                  {entry.isDir ? (
-                    <FolderOpen className="h-4 w-4 shrink-0 text-warning" />
-                  ) : (
-                    <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  )}
-                  <span className="truncate">{entry.name}</span>
-                </button>
-              ))
+              listing?.entries.map((entry) => {
+                const isSelected = selectedPath === entry.path
+                return (
+                  <button
+                    key={entry.path}
+                    type="button"
+                    onClick={() => {
+                      if (entry.isDir) load(entry.path)
+                      else setSelectedPath(isSelected ? null : entry.path)
+                    }}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${isSelected ? "bg-primary/10 ring-1 ring-primary/40" : "hover:bg-muted"}`}
+                  >
+                    {entry.isDir ? (
+                      <FolderOpen className="h-4 w-4 shrink-0 text-warning" />
+                    ) : (
+                      <FileText className={`h-4 w-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                    )}
+                    <span className="truncate">{entry.name}</span>
+                  </button>
+                )
+              })
             )}
           </div>
         </div>
@@ -143,7 +161,7 @@ export function LocalDirPicker({ open, onOpenChange, onSelect }: LocalDirPickerP
           <Button variant="outline" onClick={() => onOpenChange(false)}>{t("extensions.common.cancel")}</Button>
           <Button onClick={handleConfirm} disabled={!listing?.path || saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-            {t("config.folderChoose")}
+            {selectedPath ? t("config.fileChoose") : t("config.folderChoose")}
           </Button>
         </DialogFooter>
       </DialogContent>

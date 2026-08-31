@@ -61,6 +61,16 @@ describe("templates registry", () => {
     expect(list.find((t) => t.id === "xlsx-data-insight")?.category).toBe("file")
   })
 
+  it("文件类模板的输入节点均为 file 类型（显示本地文件选择器）", () => {
+    for (const id of ["file-to-docx", "folder-batch-summary", "xlsx-data-insight"]) {
+      const built = getTemplate(id)!.build("zh")
+      const inputNode = built.nodes.find((n) => n.data.type === "input")
+      expect(inputNode, `${id} 缺少 input 节点`).toBeDefined()
+      const cfg = inputNode!.data.config as Record<string, unknown>
+      expect(cfg.type, `${id} 输入节点应为 file 类型`).toBe("file")
+    }
+  })
+
   // ===== Phase 6 场景模板 =====
 
   it("feishu-assistant 模板：receive → Agent(filesystem/office) → send reply 三节点闭环", () => {
