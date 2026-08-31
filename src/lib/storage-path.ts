@@ -16,3 +16,16 @@ export function resolveStoragePath(raw: string): string | null {
   if (rel.startsWith("..") || path.isAbsolute(rel)) return null
   return abs
 }
+
+/**
+ * 把 office 工具的 outputPath 参数解析成 storage 相对路径。
+ * office 工具的 outputPath 相对 cwd（如 "storage/export/报告.docx"），
+ * 或为 storage 根内的绝对路径。越界或非法返回 null。
+ */
+export function officeOutputToStorageRel(outputPath: unknown): string | null {
+  if (typeof outputPath !== "string" || !outputPath.trim()) return null
+  const abs = path.isAbsolute(outputPath) ? path.normalize(outputPath) : path.resolve(process.cwd(), outputPath)
+  const rel = path.relative(STORAGE_ROOT, abs)
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return null
+  return rel.split(path.sep).join("/")
+}

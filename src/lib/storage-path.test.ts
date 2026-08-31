@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { resolveStoragePath, STORAGE_ROOT } from "@/lib/storage-path"
+import { resolveStoragePath, officeOutputToStorageRel, STORAGE_ROOT } from "@/lib/storage-path"
 import path from "path"
 
 describe("resolveStoragePath 路径安全校验", () => {
@@ -28,5 +28,27 @@ describe("resolveStoragePath 路径安全校验", () => {
   it("storage 根的同名前缀目录不被误判为越界", () => {
     const evilAbs = path.join(path.dirname(STORAGE_ROOT), "storage2", "x.txt")
     expect(resolveStoragePath(evilAbs)).toBeNull()
+  })
+})
+
+describe("officeOutputToStorageRel", () => {
+  it("相对 outputPath → storage 相对路径", () => {
+    expect(officeOutputToStorageRel("storage/export/report.docx")).toBe("export/report.docx")
+  })
+
+  it("storage 根内绝对路径 → 相对路径", () => {
+    const abs = path.join(STORAGE_ROOT, "export", "a.xlsx")
+    expect(officeOutputToStorageRel(abs)).toBe("export/a.xlsx")
+  })
+
+  it("越界路径 → null", () => {
+    expect(officeOutputToStorageRel("../../etc/passwd")).toBeNull()
+    expect(officeOutputToStorageRel("/etc/passwd")).toBeNull()
+  })
+
+  it("非字符串 → null", () => {
+    expect(officeOutputToStorageRel(undefined)).toBeNull()
+    expect(officeOutputToStorageRel(123)).toBeNull()
+    expect(officeOutputToStorageRel("")).toBeNull()
   })
 })

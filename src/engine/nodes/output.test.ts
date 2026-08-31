@@ -162,3 +162,56 @@ describe("executeOutputNode", () => {
     expect(res.fileName).toMatch(/^output-\d{14}\.md$/)
   })
 })
+describe("executeOutputNode 上游 office 产物捕获", () => {
+  function makeCtxWithOfficeTool(): ExecutionContext {
+    const ctx: ExecutionContext = {
+      workflowId: "wf", executionId: "exec-office", input: {},
+      nodeResults: new Map(), logs: [],
+    }
+    ctx.nodeResults.set("llm-1", {
+      text: "已生成报告 storage/export/报告.docx",
+      raw: "已生成报告 storage/export/报告.docx",
+      toolCalls: [
+        { name: "create_docx", args: { outputPath: "storage/export/报告.docx", markdown: "# 报告" }, summary: "" },
+      ],
+    })
+    return ctx
+  }
+
+  it("download 模式下仍捕获上游 office 生成的文件并暴露 filePath/fileName", async () => {
+    const res = await executeOutputNode(
+      makeNode({ format: "text", template: "", exportMode: "download", remoteUrl: "" }),
+      makeCtxWithOfficeTool(),
+    ) as Record<string, unknown>
+    expect(res.filePath).toBe("export/报告.docx")
+    expect(res.fileName).toBe("报告.docx")
+  })
+
+  it("无 office 工具调用时 download 模式不设置 filePath", async () => {
+    const ctx: ExecutionContext = {
+      workflowId: "wf", executionId: "e", input: {},
+      nodeResults: new Map([["llm-1", { text: "hi", raw: "hi" }]]), logs: [],
+    }
+    const res = await executeOutputNode(
+      makeNode({ format: "text", template: "", exportMode: "download", remoteUrl: "" }),
+      ctx,
+    ) as Record<string, unknown>
+    expect(res.filePath).toBeUndefined()
+  })
+
+  it("越界的 outputPath 被忽略（不暴露 filePath）", async () => {
+    const ctx: ExecutionContext = {
+      workflowId: "wf", executionId: "e", input: {},
+      nodeResults: new Map(), logs: [],
+    }
+    ctx.nodeResults.set("llm-1", {
+      raw: "x",
+      toolCalls: [{ name: "create_docx", args: { outputPath: "/etc/passwd" }, summary: "" }],
+    })
+    const res = await executeOutputNode(
+      makeNode({ format: "text", template: "", exportMode: "download", remoteUrl: "" }),
+      ctx,
+    ) as Record<string, unknown>
+    expect(res.filePath).toBeUndefined()
+  })
+})

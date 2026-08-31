@@ -1,6 +1,7 @@
 import { promises as fs } from "fs"
 import path from "path"
 import type { ExecutionContext, NodeExecutor } from "@/types/workflow"
+import { officeOutputToStorageRel, STORAGE_ROOT } from "@/lib/storage-path"
 
 function exportBaseDir(): string {
   return process.env.EXPORT_STORAGE_DIR || path.join(process.cwd(), "storage", "exports")
@@ -71,6 +72,43 @@ function findUpstreamMusic(context: ExecutionContext): MusicResult | null {
           fileName: (r.fileName as string) || path.basename(r.localPath),
           metadata: (r.metadata as Record<string, unknown>) || {},
         }
+      }
+    }
+  }
+  return null
+}
+
+const OFFICE_TOOLS = new Set(["create_docx", "create_xlsx", "create_pptx", "create_pdf"])
+
+interface GeneratedFile {
+  filePath: string  // storage 相对路径
+  fileName: string
+  fileSize?: number
+}
+
+/**
+ * 扫描上游 LLM 节点的工具调用，提取 office 工具生成的产物文件。
+ * LLM 节点输出含 toolCalls: [{ name, args: { outputPath } }]，
+ * outputPath 即 office 工具写入的文件（相对 cwd 或 storage 根内绝对路径）。
+ */
+function findUpstreamGeneratedFile(context: ExecutionContext): GeneratedFile | null {
+  for (const [, output] of context.nodeResults) {
+    if (!output || typeof output !== "object") continue
+    const obj = output as Record<string, unknown>
+    const calls = obj.toolCalls
+    if (!Array.isArray(calls)) continue
+    for (const call of calls) {
+      const c = call as Record<string, unknown> | null
+      if (!c || typeof c !== "object") continue
+      const name = c.name as string | undefined
+      if (!name || !OFFICE_TOOLS.has(name)) continue
+      const args = c.args as Record<string, unknown> | undefined
+      const rel = officeOutputToStorageRel(args?.outputPath)
+      if (!rel) continue
+      return {
+        filePath: rel,
+        fileName: path.basename(rel),
+        fileSize: undefined,
       }
     }
   }
@@ -185,6 +223,22 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
     const d = new Date()
     const p = (n: number) => String(n).padStart(2, "0")
     fileName = `output-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.${extFor(format)}`
+  }
+
+  // ===== 上游 office 工具产物：LLM 生成的 docx/xlsx/pptx/pdf 文件 =====
+  // 当输出节点自身未落盘（download 模式）或需要展示上游生成物时，优先暴露 office 产物
+  if (!music && !filePath) {
+    const generated = findUpstreamGeneratedFile(context)
+    if (generated) {
+      filePath = generated.filePath
+      fileName = generated.fileName
+      try {
+        const stat = await fs.stat(path.join(STORAGE_ROOT, generated.filePath))
+        fileSize = stat.size
+      } catch {
+        /* 文件可能尚未写入 */
+      }
+    }
   }
 
   return {
