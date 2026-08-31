@@ -271,7 +271,16 @@
     "noConfig": "No configuration available for this node",
     "fileBrowseTitle": "Select a local file or folder",
     "fileSelectedHint": "Click a file to select it; click again to deselect",
-    "fileChoose": "Choose this file"
+    "fileChoose": "Choose this file",
+    "fsSidebar": "Quick Access",
+    "fsHome": "Home",
+    "fsDesktop": "Desktop",
+    "fsDownloads": "Downloads",
+    "fsDocuments": "Documents",
+    "fsName": "Name",
+    "fsSize": "Size",
+    "fsModified": "Date Modified",
+    "fsItems": "{count} items"
   },
   "audioResult": {
     "preview": "Preview",

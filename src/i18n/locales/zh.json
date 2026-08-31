@@ -271,7 +271,16 @@
     "noConfig": "该节点暂无配置项",
     "fileBrowseTitle": "选择本地文件或文件夹",
     "fileSelectedHint": "点击文件选中，点选中的文件可取消",
-    "fileChoose": "选择此文件"
+    "fileChoose": "选择此文件",
+    "fsSidebar": "快速访问",
+    "fsHome": "主目录",
+    "fsDesktop": "桌面",
+    "fsDownloads": "下载",
+    "fsDocuments": "文稿",
+    "fsName": "名称",
+    "fsSize": "大小",
+    "fsModified": "修改日期",
+    "fsItems": "{count} 项"
   },
   "audioResult": {
     "preview": "预览",

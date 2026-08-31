@@ -17,6 +17,7 @@ interface FsEntry {
   path: string
   size: number
   isDir: boolean
+  mtime: number
 }
 
 function withinRoot(p: string): boolean {
@@ -31,15 +32,15 @@ async function listDir(dir: string): Promise<FsEntry[]> {
   for (const entry of entries) {
     const full = path.join(dir, entry.name)
     if (entry.isSymbolicLink()) continue
-    if (entry.isDirectory()) {
-      out.push({ name: entry.name, path: full, size: 0, isDir: true })
-    } else if (entry.isFile()) {
-      try {
-        const stat = await fs.stat(full)
-        out.push({ name: entry.name, path: full, size: stat.size, isDir: false })
-      } catch {
-        // ignore unreadable files
+    try {
+      const stat = await fs.stat(full)
+      if (stat.isDirectory()) {
+        out.push({ name: entry.name, path: full, size: 0, isDir: true, mtime: stat.mtimeMs })
+      } else if (stat.isFile()) {
+        out.push({ name: entry.name, path: full, size: stat.size, isDir: false, mtime: stat.mtimeMs })
       }
+    } catch {
+      // ignore unreadable entries
     }
   }
   out.sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1))
@@ -54,7 +55,7 @@ async function listDrives(): Promise<FsEntry[]> {
     const p = `${letter}:\\`
     try {
       await fs.access(p)
-      drives.push({ name: `${letter}:`, path: p, size: 0, isDir: true })
+      drives.push({ name: `${letter}:`, path: p, size: 0, isDir: true, mtime: 0 })
     } catch {
       // drive does not exist
     }
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
     if (!raw) {
       if (isWin) {
         const drives = await listDrives()
-        return NextResponse.json({ path: null, parent: null, drives, entries: [] })
+        return NextResponse.json({ path: null, parent: null, drives, entries: [], home: os.homedir() })
       }
       const desktop = defaultStartDir()
       let start = desktop
@@ -81,11 +82,11 @@ export async function GET(req: NextRequest) {
       }
       try {
         const entries = await listDir(start)
-        return NextResponse.json({ path: start, parent: path.dirname(start), drives: [], entries })
+        return NextResponse.json({ path: start, parent: path.dirname(start), drives: [], entries, home: os.homedir() })
       } catch {
         // 最终回退根目录
         const entries = await listDir("/")
-        return NextResponse.json({ path: "/", parent: null, drives: [], entries })
+        return NextResponse.json({ path: "/", parent: null, drives: [], entries, home: os.homedir() })
       }
     }
 
@@ -99,7 +100,7 @@ export async function GET(req: NextRequest) {
     }
     const parent = isWin && resolved === path.dirname(resolved) ? null : path.dirname(resolved)
     const entries = await listDir(resolved)
-    return NextResponse.json({ path: resolved, parent, drives: [], entries })
+    return NextResponse.json({ path: resolved, parent, drives: [], entries, home: os.homedir() })
   } catch (error) {
     console.error("Failed to list filesystem:", error)
     return NextResponse.json({ error: "Failed to list directory" }, { status: 500 })
