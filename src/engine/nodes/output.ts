@@ -2,6 +2,7 @@ import { promises as fs } from "fs"
 import path from "path"
 import type { ExecutionContext, NodeExecutor } from "@/types/workflow"
 import { officeOutputToStorageRel, STORAGE_ROOT } from "@/lib/storage-path"
+import { resolveExpression } from "@/lib/expression"
 
 function exportBaseDir(): string {
   return process.env.EXPORT_STORAGE_DIR || path.join(process.cwd(), "storage", "exports")
@@ -152,16 +153,8 @@ export const executeOutputNode: NodeExecutor = async (node, context) => {
   }
 
   if (template) {
-    let formatted = template
-    for (const [nodeId, result] of context.nodeResults) {
-      if (typeof result === "object" && result !== null) {
-        const obj = result as Record<string, unknown>
-        if (typeof obj.raw === "string") {
-          formatted = formatted.replace(`{{${nodeId}}}`, obj.raw)
-        }
-      }
-    }
-    output = formatted
+    // 支持 {{ $node.llm-1.text }} / {{ llm-1.text }} / {{ field }} 等表达式语法
+    output = resolveExpression(template, context)
   }
 
   const music = findUpstreamMusic(context)

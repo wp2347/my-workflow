@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { decrypt } from "@/lib/crypto"
 import type { ExecutionContext, McpBinding, McpPackBinding } from "@/types/workflow"
-import { spawn, type ChildProcess } from "child_process"
 
 export type McpBindingEntry = McpBinding | McpPackBinding
 
@@ -10,32 +9,57 @@ export interface McpPayload {
   resourceContext: string[]
 }
 
-// stdio 进程池:serverId → { process, refCount, lastUsed, restartCount }
-interface ProcessEntry {
-  proc: ChildProcess
-  refCount: number
+// stdio 连接池：serverId → 存活的 MCP 客户端（供工具执行期复用，空闲超时关闭）
+interface StdioClientEntry {
+  client: unknown
+  transport: { close?: () => Promise<void> }
   lastUsed: number
-  restartCount: number
-  command: string
-  args: string[]
-  env: Record<string, string>
 }
 
-const processPool = new Map<string, ProcessEntry>()
-const IDLE_TIMEOUT_MS = 5 * 60 * 1000  // 5 分钟
+const stdioPool = new Map<string, StdioClientEntry>()
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000 // 5 分钟
 
-// 定期清理空闲进程
+// 定期清理空闲的 stdio 连接
 if (typeof setInterval !== "undefined") {
   setInterval(() => {
     const now = Date.now()
-    for (const [id, entry] of processPool.entries()) {
-      if (entry.refCount === 0 && now - entry.lastUsed > IDLE_TIMEOUT_MS) {
-        try { entry.proc.kill() } catch {}
-        processPool.delete(id)
-        console.log(`[mcp-manager] Killed idle stdio process: ${id}`)
+    for (const [id, entry] of stdioPool.entries()) {
+      if (now - entry.lastUsed > IDLE_TIMEOUT_MS) {
+        try { void entry.transport.close?.() } catch {}
+        stdioPool.delete(id)
+        console.log(`[mcp-manager] Closed idle stdio client: ${id}`)
       }
     }
   }, 60 * 1000).unref()
+}
+
+/** 获取或创建 stdio 客户端（复用存活连接，避免工具执行时连接已关闭） */
+async function getStdioClient(
+  serverId: string,
+  command: string,
+  args: string[],
+  env: Record<string, string>,
+): Promise<{ client: unknown; transport: { close?: () => Promise<void> } }> {
+  const existing = stdioPool.get(serverId)
+  if (existing) {
+    existing.lastUsed = Date.now()
+    return existing
+  }
+  const { Client } = await import("@modelcontextprotocol/sdk/client/index.js")
+  const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
+  const transport = new StdioClientTransport({
+    command,
+    args,
+    env: { ...process.env, ...env } as Record<string, string>,
+  })
+  const mcpClient = new Client(
+    { name: "workflow-executor", version: "1.0.0" },
+    { capabilities: {} },
+  )
+  await mcpClient.connect(transport)
+  const entry: StdioClientEntry = { client: mcpClient, transport: transport as unknown as StdioClientEntry["transport"], lastUsed: Date.now() }
+  stdioPool.set(serverId, entry)
+  return entry
 }
 
 /**
@@ -121,23 +145,18 @@ export async function loadMcpExtensions(
 
         await client.close?.()
       } else if (server.transport === "stdio") {
-        const { Client } = await import("@modelcontextprotocol/sdk/client/index.js")
-        const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
-        const transport = new StdioClientTransport({
-          command: server.command!,
-          args: (server.args as string[]) || [],
-          env: { ...process.env, ...env } as Record<string, string>,
-        })
-        const mcpClient = new Client(
-          { name: "workflow-executor", version: "1.0.0" },
-          { capabilities: {} },
-        )
-        await mcpClient.connect(transport)
+        const stdio = await getStdioClient(server.id, server.command!, (server.args as string[]) || [], env)
+        const mcpClient = stdio.client as {
+          listTools: () => Promise<{ tools?: Array<{ name: string; description?: string; inputSchema?: unknown }> }>
+          callTool: (req: { name: string; arguments: Record<string, unknown> }) => Promise<unknown>
+          readResource: (req: { uri: string }) => Promise<{ contents: Array<{ text?: string }> }>
+        }
 
         const toolsResult = await mcpClient.listTools()
 
         for (const t of toolsResult.tools || []) {
-          if (binding.tools === "all" || (Array.isArray(binding.tools) && binding.tools.includes(t.name))) {
+          // undefined 等价 "all"（packId 绑定未指定 tools 过滤时加载全部）
+          if (!binding.tools || binding.tools === "all" || (Array.isArray(binding.tools) && binding.tools.includes(t.name))) {
             allTools[t.name] = {
               description: t.description,
               inputSchema: t.inputSchema,
@@ -162,8 +181,7 @@ export async function loadMcpExtensions(
             }
           }
         }
-
-        await transport.close?.()
+        // 不再立即 close：连接由连接池管理，工具执行期间保持存活
       }
     } catch (error) {
       console.warn(`[mcp-manager] Failed to load MCP server ${binding.serverId}:`, error)

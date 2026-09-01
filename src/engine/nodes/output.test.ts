@@ -215,3 +215,32 @@ describe("executeOutputNode 上游 office 产物捕获", () => {
     expect(res.filePath).toBeUndefined()
   })
 })
+
+describe("executeOutputNode 模板表达式解析", () => {
+  it("template 支持 {{ $node.llm-1.text }} 语法解析出 LLM 文本", async () => {
+    const ctx: ExecutionContext = {
+      workflowId: "wf", executionId: "e", input: {},
+      nodeResults: new Map(), logs: [],
+    }
+    ctx.nodeResults.set("llm-1", { text: "这是 LLM 生成的报告正文", raw: "这是 LLM 生成的报告正文" })
+    const res = await executeOutputNode(
+      makeNode({ format: "text", template: "{{ $node.llm-1.text }}", exportMode: "download", remoteUrl: "" }),
+      ctx,
+    ) as Record<string, unknown>
+    expect(res.output).toBe("这是 LLM 生成的报告正文")
+    expect(res.raw).toBe("这是 LLM 生成的报告正文")
+  })
+
+  it("template 支持 {{ llm-1.text }} 简写语法", async () => {
+    const ctx: ExecutionContext = {
+      workflowId: "wf", executionId: "e", input: {},
+      nodeResults: new Map(), logs: [],
+    }
+    ctx.nodeResults.set("llm-1", { text: "简写正文", raw: "简写正文" })
+    const res = await executeOutputNode(
+      makeNode({ format: "text", template: "{{ llm-1.text }}", exportMode: "download", remoteUrl: "" }),
+      ctx,
+    ) as Record<string, unknown>
+    expect(res.output).toBe("简写正文")
+  })
+})
