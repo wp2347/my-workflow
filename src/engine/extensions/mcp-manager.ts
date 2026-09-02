@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { decrypt } from "@/lib/crypto"
 import type { ExecutionContext, McpBinding, McpPackBinding } from "@/types/workflow"
+import { tool, jsonSchema } from "ai"
 
 export type McpBindingEntry = McpBinding | McpPackBinding
 
@@ -157,13 +158,17 @@ export async function loadMcpExtensions(
         for (const t of toolsResult.tools || []) {
           // undefined 等价 "all"（packId 绑定未指定 tools 过滤时加载全部）
           if (!binding.tools || binding.tools === "all" || (Array.isArray(binding.tools) && binding.tools.includes(t.name))) {
-            allTools[t.name] = {
-              description: t.description,
-              inputSchema: t.inputSchema,
+            // MCP 返回原始 JSON Schema，需用 jsonSchema() 包装成 AI SDK 可识别的 Schema
+            const schema = t.inputSchema && typeof t.inputSchema === "object"
+              ? jsonSchema(t.inputSchema as Record<string, unknown>)
+              : jsonSchema({ type: "object" })
+            allTools[t.name] = tool({
+              description: t.description || "",
+              inputSchema: schema,
               execute: async (args: unknown) => {
                 return await mcpClient.callTool({ name: t.name, arguments: args as Record<string, unknown> })
               },
-            }
+            })
           }
         }
 
