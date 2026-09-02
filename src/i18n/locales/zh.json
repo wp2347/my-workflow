@@ -7,7 +7,12 @@
   "sidebar": {
     "home": "首页",
     "workflows": "工作流",
-    "newWorkflow": "新建工作流"
+    "newWorkflow": "新建工作流",
+    "extensions": "扩展包",
+    "history": "执行历史",
+    "credentials": "凭证管理",
+    "knowledge": "知识库",
+    "templates": "模板库"
   },
   "home": {
     "welcome": "欢迎使用 My Workflow",
@@ -32,7 +37,13 @@
     "delete": "删除",
     "deleteTitle": "删除工作流",
     "deleteDesc": "确定要删除 \"{name}\" 吗？此操作不可撤销，所有节点、连线及执行历史将被永久删除。",
-    "cancel": "取消"
+    "cancel": "取消",
+    "musicTemplate": "音乐生成模板",
+    "musicTemplateDesc": "输入提示词自动生成音乐并导出",
+    "completed": "成功",
+    "failed": "失败",
+    "prev": "上一页",
+    "next": "下一页"
   },
   "canvas": {
     "nodes": "节点列表",
@@ -52,11 +63,21 @@
     "mergeDesc": "合并多个分支结果",
     "cronTrigger": "定时触发器",
     "cronTriggerDesc": "Cron 表达式定时执行工作流",
+    "music": "音乐生成",
+    "musicDesc": "调用音乐生成 API 生成音频",
+    "knowledgeSearch": "知识库检索",
+    "knowledgeSearchDesc": "从知识库召回相关片段传给下游",
     "dragTips": {
       "drag": "拖拽节点到画布",
       "connect": "连接节点",
       "click": "点击进行配置"
-    }
+    },
+    "code": "代码执行",
+    "codeDesc": "运行自定义 JS 脚本处理数据",
+    "delay": "延时等待",
+    "delayDesc": "暂停指定毫秒后继续执行",
+    "loop": "循环迭代",
+    "loopDesc": "遍历数组逐项处理，上限 1000 次"
   },
   "config": {
     "selectNode": "点击画布上的节点进行配置",
@@ -82,6 +103,7 @@
     "format": "输出格式",
     "template": "模板",
     "templatePlaceholder": "使用 {{nodeId}} 引用节点输出",
+    "outputResult": "运行结果",
     "customModel": "--- 手动输入模型 ID ---",
     "customModelPlaceholder": "输入模型 ID，例如 deepseek-v4-pro",
     "modelsAvailable": "{count} 个模型可用。选择\"手动输入\"可输入任意 ID。",
@@ -121,15 +143,20 @@
     "httpUrl": "URL",
     "httpBody": "请求体",
     "httpBodyHint": "支持 {{变量}} 引用上游节点输出",
-    "retrySettings": "▸ 错误重试设置",
-    "maxRetries": "最大重试次数",
-    "template": "模板",
     "knowledge": "知识库",
     "knowledgeNone": "不使用",
     "knowledgePlaceholder": "不使用知识库",
     "memory": "多轮对话记忆",
     "jsonMode": "JSON 模式输出",
-    "functionCalling": "工具调用（天气查询等）",
+    "functionCalling": "内置工具调用（天气查询·示例）",
+    "agentMaxSteps": "工具循环上限",
+    "agentMaxStepsHint": "单次执行中模型与工具的最大交互轮数（1-20，默认 8）",
+    "knowledgeAll": "全部文档",
+    "knowledgeTopK": "返回条数 TopK",
+    "knowledgeTopKHint": "每次检索返回的最相关片段数量（1-20）",
+    "knowledgeQueryTemplate": "查询内容模板",
+    "knowledgeQueryTemplateHint": "留空则使用上游节点的输出作为查询",
+    "knowledgeSearchHint": "将本节点连接在 Input 与 LLM 之间，即可实现 RAG 检索增强问答。",
     "httpAuth": "认证设置",
     "authNone": "无认证",
     "authBearer": "Bearer Token",
@@ -158,7 +185,7 @@
     "mergeJsonArray": "JSON 数组",
     "mergeFirst": "取第一个",
     "mergeLast": "取最后一个",
-    "mergeHint": "将多个上游节点的输出按策略汇聚。常用于分支后合并结果。",
+    "mergeHint": "将多个上游节点的输出按策略汇聚。常用于 IF/ELSE 分支后合并结果。",
     "cronName": "任务名称",
     "cronNamePlaceholder": "如：每日天气推送",
     "cronFrequency": "执行频率",
@@ -186,10 +213,173 @@
     "agentSupportDesc": "你是技术客服，帮用户解决技术问题，回答简洁准确。",
     "agentTranslator": "翻译专家",
     "agentTranslatorDesc": "你是翻译专家，帮用户翻译文本，保持原意和风格。",
-    "httpMethod": "方法",
-    "httpUrl": "URL",
-    "httpBody": "请求体",
-    "httpBodyHint": "支持 {{变量}} 引用上游节点输出"
+    "musicApiUrl": "API 地址",
+    "musicMethod": "请求方法",
+    "musicHeaders": "请求头",
+    "musicHeadersError": "JSON 格式错误",
+    "musicBody": "请求体模板",
+    "musicBodyHint": "可用占位符：{{ $input.prompt }}、{{ $input.style }}、{{ $input.duration }}，或 {{ nodeId.field }} 引用上游节点",
+    "musicAuth": "认证方式",
+    "musicPolling": "异步轮询",
+    "musicPollingHint": "音乐生成通常为异步任务，开启后按 task_id 轮询直到完成",
+    "musicTaskIdField": "任务 ID 字段路径",
+    "musicPollUrl": "轮询 URL 模板",
+    "musicPollUrlHint": "例如 https://api.xxx.com/tasks/{{taskId}}",
+    "musicPollInterval": "轮询间隔(ms)",
+    "musicPollMaxAttempts": "最大轮询次数",
+    "musicPollStatusField": "状态字段路径(可选)",
+    "musicPollSuccessValue": "完成状态值(可选)",
+    "musicResultExtract": "结果提取",
+    "musicAudioUrlField": "音频 URL 字段路径",
+    "musicMetadataField": "元信息字段路径(可选)",
+    "exportSettings": "导出设置",
+    "exportMode": "导出模式",
+    "exportDownload": "下载到本地",
+    "exportLocal": "保存到服务器目录",
+    "exportRemote": "上传到远程 URL",
+    "exportPath": "导出目录",
+    "exportPathHint": "相对于项目根目录，默认 storage/exports/",
+    "remoteUrl": "远程上传 URL",
+    "selectCredential": "选择全局凭证",
+    "credentialManual": "手动输入",
+    "credentialSelected": "已选凭证",
+    "noCredential": "暂无全局凭证，请先在凭证管理中添加。",
+    "credentialLink": "前往凭证管理",
+    "typeFile": "文件/文件夹",
+    "fileSelect": "选择本地文件或文件夹",
+    "fileSelectPlaceholder": "从 storage/ 目录选择文件",
+    "fileSelectHint": "选中路径将作为输入变量传给下游；文件夹会列出并读取其中文件，LLM 可通过 filesystem MCP 访问",
+    "folderBrowse": "浏览本地文件夹…",
+    "folderBrowseTitle": "选择本地文件夹",
+    "folderUp": "上级目录",
+    "folderSelectHint": "点击文件夹进入，选择后自动加入读取白名单",
+    "folderLoading": "加载中…",
+    "folderEmpty": "此目录为空或无访问权限",
+    "folderChoose": "选择此文件夹",
+    "codeScript": "JS 脚本",
+    "codeScriptHint": "可用变量：items（上游数组）、input（工作流输入）、query（上游文本）。需 return 返回结果。",
+    "codeTimeout": "超时（毫秒）",
+    "codeTimeoutHint": "含循环的脚本超时后会被强制终止（50-30000）",
+    "codeSandboxHint": "⚠️ 安全提示：脚本能访问的数据仅限注入变量；require/process/global 均被禁止。此执行不是强沙箱，请勿运行不可信代码。",
+    "delayDuration": "延时（毫秒）",
+    "delayDurationHint": "最长 5 分钟（300000ms）",
+    "loopSource": "数组来源表达式",
+    "loopSourceHint": "引用上游的数组输出，或直接填 JSON 数组字符串",
+    "loopItemTemplate": "逐项模板",
+    "loopItemTemplateHint": "$item 为当前项；留空取项本身",
+    "loopLimitHint": "为防止失控，单次循环最多 1000 项。",
+    "noConfig": "该节点暂无配置项",
+    "fileBrowseTitle": "选择本地文件或文件夹",
+    "fileSelectedHint": "点击文件选中，点选中的文件可取消",
+    "fileChoose": "选择此文件",
+    "fsSidebar": "快速访问",
+    "fsHome": "主目录",
+    "fsDesktop": "桌面",
+    "fsDownloads": "下载",
+    "fsDocuments": "文稿",
+    "fsName": "名称",
+    "fsSize": "大小",
+    "fsModified": "修改日期",
+    "fsItems": "{count} 项"
+  },
+  "audioResult": {
+    "preview": "预览",
+    "download": "下载",
+    "clear": "清空",
+    "clearing": "清除中…",
+    "cleared": "已清空",
+    "noMetadata": "无元信息",
+    "metadata": "元信息",
+    "title": "标题",
+    "duration": "时长",
+    "style": "风格",
+    "clearFailed": "清空失败，请重试",
+    "play": "播放",
+    "pause": "暂停",
+    "seek": "进度",
+    "unavailable": "音频暂不可用",
+    "retry": "重试",
+    "fields": {
+      "title": "标题",
+      "duration": "时长",
+      "style": "风格",
+      "artist": "艺术家",
+      "album": "专辑",
+      "genre": "流派",
+      "format": "格式",
+      "model": "模型",
+      "lyrics": "歌词",
+      "sample_rate": "采样率",
+      "channels": "声道",
+      "length": "长度",
+      "bitrate": "码率",
+      "music_duration": "时长",
+      "music_sample_rate": "采样率",
+      "music_channel": "声道",
+      "music_size": "文件大小"
+    }
+  },
+  "templates": {
+    "title": "模板库",
+    "description": "选择预设模板快速创建工作流",
+    "useTemplate": "使用模板",
+    "noTemplates": "暂无可用模板",
+    "category": {
+      "music": "音乐",
+      "llm": "LLM 应用",
+      "automation": "自动化",
+      "file": "文件处理"
+    },
+    "list": {
+      "dailyBrief": {
+        "name": "每日早报推送",
+        "description": "定时抓取热点资讯，AI 生成摘要后推送飞书"
+      },
+      "llmApps": {
+        "name": "智能翻译助手",
+        "description": "输入任意文本，AI 自动翻译成目标语言"
+      },
+      "modelCompare": {
+        "name": "多模型对比",
+        "description": "同一问题同时发给两个 AI 模型，汇聚展示两种回答"
+      },
+      "supportRouting": {
+        "name": "智能客服分流",
+        "description": "根据问题关键词智能分流：技术问题转技术客服，其余转通用回复"
+      },
+      "reminder": {
+        "name": "定时提醒",
+        "description": "按设定时间定时向飞书发送提醒消息"
+      },
+      "music": {
+        "name": "音乐生成模板",
+        "description": "输入提示词自动生成音乐并导出"
+      },
+      "fileToDocx": {
+        "name": "本地文件生成 Word 报告",
+        "description": "读取 storage 目录下的文件，由 AI 生成 Word 报告"
+      },
+      "dataToXlsx": {
+        "name": "数据生成 Excel 报表",
+        "description": "把输入数据整理成表格，AI 生成 Excel 报表"
+      },
+      "markdownToPptx": {
+        "name": "大纲生成 PPT",
+        "description": "输入主题，AI 生成 Markdown 大纲并输出 PPT 文件"
+      },
+      "folderBatchSummary": {
+        "name": "文件夹批量摘要报告",
+        "description": "遍历本地文件夹中的所有文档，逐个摘要后汇总生成 Word 报告"
+      },
+      "xlsxDataInsight": {
+        "name": "表格数据洞察 PPT",
+        "description": "读取本地表格（xlsx/csv），AI 分析数据洞察并生成 PPT 演示文稿"
+      },
+      "feishuAssistant": {
+        "name": "飞书对话助手",
+        "description": "飞书群里 @机器人即可获得带工具能力的 AI 助手"
+      }
+    }
   },
   "chat": {
     "title": "调试聊天",
@@ -205,5 +395,231 @@
     "completed": "已完成",
     "failed": "失败",
     "idle": "空闲"
+  },
+  "extensions": {
+    "title": "扩展包管理",
+    "tabs": {
+      "skills": "技能包",
+      "prompts": "提示词",
+      "mcp": "MCP 服务",
+      "packs": "技能包市场"
+    },
+    "common": {
+      "create": "新建",
+      "upload": "上传",
+      "export": "导出",
+      "delete": "删除",
+      "search": "搜索",
+      "edit": "编辑",
+      "save": "保存",
+      "cancel": "取消",
+      "confirmDelete": "确定要删除吗？此操作不可撤销。",
+      "noData": "暂无数据",
+      "name": "名称",
+      "description": "描述",
+      "category": "分类",
+      "tags": "标签",
+      "addTag": "添加标签",
+      "updated": "更新时间"
+    },
+    "skills": {
+      "namePlaceholder": "技能名称(≤64字符)",
+      "descPlaceholder": "第三人称描述，说明技能做什么及何时使用(≤1024字符)",
+      "descHint": "💡 使用第三人称，如 \"Processes PDF files. Use when working with PDFs.\"",
+      "contentLabel": "SKILL.md 内容",
+      "attachments": "附件",
+      "uploadAttachment": "上传附件",
+      "attachmentType": {
+        "reference": "参考文档",
+        "script": "脚本"
+      },
+      "charCount": "字符数"
+    },
+    "prompts": {
+      "namePlaceholder": "提示词名称",
+      "contentLabel": "模板内容",
+      "contentHint": "使用 {{变量名}} 或 {{$input.field}} 引用变量",
+      "role": "注入位置",
+      "roleSystem": "System Prompt",
+      "roleUser": "User Input",
+      "variables": "变量定义",
+      "varName": "变量名",
+      "varDesc": "描述",
+      "varRequired": "必填",
+      "varDefault": "默认值",
+      "addVariable": "添加变量",
+      "preview": "预览(使用默认值)"
+    },
+    "mcp": {
+      "transport": "传输方式",
+      "transportHttp": "HTTP",
+      "transportSse": "SSE",
+      "transportStdio": "Stdio",
+      "url": "URL",
+      "urlPlaceholder": "https://mcp-server.example.com",
+      "headers": "请求头",
+      "command": "命令",
+      "commandPlaceholder": "npx",
+      "args": "参数",
+      "argsPlaceholder": "[-y, @modelcontextprotocol/server-sqlite]",
+      "env": "环境变量",
+      "testConnection": "测试连接",
+      "testing": "测试中...",
+      "statusOnline": "在线",
+      "statusOffline": "离线",
+      "statusError": "错误",
+      "statusUntested": "未测试",
+      "capabilities": "能力预览",
+      "tools": "工具",
+      "resources": "资源",
+      "promptsLabel": "Prompts",
+      "stdioWarning": "⚠️ Stdio 仅适用于自托管部署，云端建议使用 HTTP/SSE"
+    },
+    "picker": {
+      "title": "扩展包",
+      "addSkill": "添加技能包",
+      "addPrompt": "添加提示词",
+      "addMcp": "添加 MCP",
+      "selectSkills": "选择技能包",
+      "selectPrompts": "选择提示词",
+      "selectMcp": "选择 MCP 服务",
+      "toolsConfig": "工具配置",
+      "allTools": "全部工具",
+      "selectedTools": "指定工具",
+      "resources": "资源",
+      "inherited": "继承工作流默认"
+    }
+  },
+  "history": {
+    "title": "执行历史",
+    "description": "查看所有工作流的执行记录",
+    "noExecutions": "暂无执行记录",
+    "noExecutionsDesc": "运行工作流后这里会显示执行历史",
+    "filterAll": "全部",
+    "filterCompleted": "成功",
+    "filterFailed": "失败",
+    "filterRunning": "运行中",
+    "rerun": "重跑"
+  },
+  "historyDetail": {
+    "notFound": "未找到执行记录",
+    "title": "执行详情",
+    "completed": "成功",
+    "failed": "失败",
+    "output": "输出数据",
+    "toolSteps": "工具调用步骤",
+    "argsSummary": "参数",
+    "resultSummary": "结果"
+  },
+  "credentials": {
+    "title": "凭证管理",
+    "description": "AES-256 加密存储，点击眼睛查看明文，点击密钥复制",
+    "add": "添加凭证",
+    "noCreds": "暂无凭证",
+    "noCredsDesc": "添加 API Key 等敏感凭证",
+    "copy": "点击复制",
+    "view": "点击眼睛查看",
+    "copied": "已复制",
+    "addTitle": "添加凭证",
+    "addDesc": "AES-256 加密存储到数据库",
+    "name": "名称",
+    "namePlaceholder": "如 DeepSeek API Key",
+    "type": "类型",
+    "value": "值",
+    "scope": "作用域",
+    "global": "全局",
+    "workflow": "工作流",
+    "node": "节点",
+    "cancel": "取消",
+    "save": "保存",
+    "deleteTitle": "删除凭证",
+    "deleteDesc": "确定删除 \"{name}\"？不可撤销。",
+    "delete": "删除"
+  },
+  "knowledge": {
+    "title": "知识库",
+    "description": "上传文档，向量化后用于 RAG 检索增强生成",
+    "addDoc": "添加文档",
+    "noDocs": "暂无文档",
+    "noDocsDesc": "上传 PDF/TXT/Markdown 构建知识库",
+    "uploadFile": "上传文件",
+    "manualInput": "或手动输入",
+    "manualInputName": "手动输入",
+    "docName": "文档名",
+    "docNamePlaceholder": "文档名称",
+    "content": "内容",
+    "contentPlaceholder": "粘贴文档内容...",
+    "cancel": "取消",
+    "upload": "上传",
+    "chunks": "{count} 个分块 · {type}",
+    "chunkSize": "{size}字/块"
+  },
+  "toolbar": {
+    "run": "执行",
+    "webhook": "Webhook",
+    "webhookTitle": "Webhook URL",
+    "webhookDesc": "POST 请求到此地址将触发工作流执行",
+    "copied": "已复制",
+    "copy": "复制地址",
+    "curlExample": "curl 示例：",
+    "status": "状态: {status}",
+    "duration": "耗时: {duration}ms",
+    "error": "   错误: {error}",
+    "output": "   输出: {output}",
+    "requestFailed": "请求失败: {error}",
+    "runResultTitle": "执行结果"
+  },
+  "cronNode": {
+    "label": "定时",
+    "unconfigured": "未配置",
+    "hourly": "每小时",
+    "daily": "每天 {time}",
+    "weekday": "工作日 {time}",
+    "weekly": "每周{day} {time}",
+    "days": {
+      "0": "日",
+      "1": "一",
+      "2": "二",
+      "3": "三",
+      "4": "四",
+      "5": "五",
+      "6": "六",
+      "7": "日"
+    }
+  },
+  "widget": {
+    "requestFailed": "请求失败，请重试",
+    "startChat": "发送消息开始对话",
+    "inputPlaceholder": "输入消息..."
+  },
+  "workflow": {
+    "untitled": "未命名工作流"
+  },
+  "packs": {
+    "title": "技能包市场",
+    "install": "安装",
+    "uninstall": "卸载",
+    "uninstallConfirm": "确定要卸载技能包「{name}」吗？已安装的 MCP 服务与技能将被删除。",
+    "installed": "已安装",
+    "import": "导入技能包",
+    "importTitle": "导入技能包",
+    "importPlaceholder": "粘贴技能包 JSON 清单...",
+    "importInvalidJson": "JSON 解析失败，请检查格式",
+    "empty": "暂无技能包",
+    "source": {
+      "official": "官方",
+      "imported": "导入"
+    },
+    "office": {
+      "name": "文档生成",
+      "description": "由 LLM 生成 Word/Excel/PPT/PDF 文件（Markdown/JSON 内容自动转换）"
+    },
+    "filesystem": {
+      "name": "本地文件读写",
+      "description": "读取/列出/搜索 storage 目录下的本地文件，供工作流使用"
+    }
+  },
+  "fileResult": {
+    "binaryHint": "此文件为二进制格式，点击下方按钮下载到本地查看。"
   }
 }

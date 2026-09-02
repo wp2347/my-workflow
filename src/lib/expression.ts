@@ -1,4 +1,5 @@
 import type { ExecutionContext } from "@/types/workflow"
+import { getByPath } from "@/lib/json-path"
 
 /**
  * 统一表达式解析器
@@ -14,23 +15,7 @@ import type { ExecutionContext } from "@/types/workflow"
  *   {{ $now }}                  — 当前 ISO 时间戳
  *   {{ date-7d }}               — 7天前日期(YYYY-MM-DD)
  */
-
-function getByPath(obj: unknown, path: string): unknown {
-  const keys = path.split(".")
-  let current = obj
-  for (const key of keys) {
-    if (current == null) return undefined
-    // Array index: data[0].field
-    const arrMatch = key.match(/^(\w+)\[(\d+)\]$/)
-    if (arrMatch) {
-      const arr = (current as Record<string, unknown>)[arrMatch[1]]
-      current = Array.isArray(arr) ? arr[parseInt(arrMatch[2])] : undefined
-      continue
-    }
-    current = (current as Record<string, unknown>)[key]
-  }
-  return current
-}
+export { getByPath }
 
 function resolveNodeOutput(context: ExecutionContext, nodeId: string, field: string): unknown {
   const output = context.nodeResults.get(nodeId)
@@ -55,6 +40,12 @@ export function resolveExpression(expr: string, context: ExecutionContext): stri
     if (exp.startsWith("$input.")) {
       const field = exp.slice(7)
       return String(getByPath(context.input, field) ?? "")
+    }
+
+    // {{ $item }} / {{ $item.field }} — 循环节点注入的当前项（存于 input.item）
+    if (exp === "$item" || exp.startsWith("$item.")) {
+      const field = exp.slice("$item".length).replace(/^\./, "")
+      return String(getByPath(context.input, field ? `item.${field}` : "item") ?? "")
     }
 
     // {{ $env.VAR }}

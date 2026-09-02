@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator"
 import { LocaleSwitcher } from "@/components/LocaleSwitcher"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/i18n"
-import { Workflow, Plus, Home, Activity, Shield, Database } from "lucide-react"
+import { Workflow, Plus, Home, Activity, Shield, Database, Package, LayoutTemplate } from "lucide-react"
 
 export default function DashboardLayout({
   children,
@@ -57,6 +57,17 @@ export default function DashboardLayout({
           </Link>
 
           <Link
+            href="/templates"
+            className={cn(
+              buttonVariants({ variant: pathname === "/templates" ? "secondary" : "ghost", size: "sm" }),
+              "w-full justify-start",
+            )}
+          >
+            <LayoutTemplate className="h-4 w-4 mr-2" />
+            {t("sidebar.templates")}
+          </Link>
+
+          <Link
             href="/history"
             className={cn(
               buttonVariants({
@@ -67,7 +78,7 @@ export default function DashboardLayout({
             )}
           >
             <Activity className="h-4 w-4 mr-2" />
-            执行历史
+            {t("sidebar.history")}
           </Link>
 
           <Link
@@ -81,14 +92,22 @@ export default function DashboardLayout({
             )}
           >
             <Shield className="h-4 w-4 mr-2" />
-            凭证管理
+            {t("sidebar.credentials")}
           </Link>
 
           <Link
             href="/knowledge"
             className={cn(buttonVariants({ variant: pathname === "/knowledge" ? "secondary" : "ghost", size: "sm" }), "w-full justify-start")}
           >
-            <Database className="h-4 w-4 mr-2" />知识库
+            <Database className="h-4 w-4 mr-2" />{t("sidebar.knowledge")}
+          </Link>
+
+          <Link
+            href="/extensions"
+            className={cn(buttonVariants({ variant: pathname === "/extensions" ? "secondary" : "ghost", size: "sm" }), "w-full justify-start")}
+          >
+            <Package className="h-4 w-4 mr-2" />
+            {t("sidebar.extensions")}
           </Link>
 
           <Separator className="my-2" />
@@ -105,7 +124,7 @@ export default function DashboardLayout({
           </Link>
         </nav>
 
-        <div className="p-3 border-t border-border flex items-center justify-between">
+        <div className="px-3 py-3 border-t border-border flex items-center justify-between">
           <div className="text-xs text-muted-foreground">{t("app.version")}</div>
           <LocaleSwitcher />
         </div>

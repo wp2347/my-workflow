@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
-import { Send, Loader2, User, Bot, RefreshCw } from "lucide-react"
+import { Send, Loader2, User, Bot, RefreshCw, Wrench } from "lucide-react"
 import { useChatStore, type ChatMessage, type ExecutionNodeState } from "@/stores/chat"
 import { useTranslation } from "@/i18n"
 
@@ -41,10 +41,11 @@ export function ChatPanel({ workflowId }: ChatPanelProps) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Execution failed")
 
-      const nodeStates: ExecutionNodeState[] = data.logs.map((log: { nodeId: string; nodeType: string; status: string; output?: { raw?: string } }) => ({
+      const nodeStates: ExecutionNodeState[] = data.logs.map((log: { nodeId: string; nodeType: string; status: string; output?: { raw?: string }; steps?: Array<{ toolName?: string }> }) => ({
         nodeId: log.nodeId, label: log.nodeType?.toUpperCase() || "Unknown",
         status: log.status as ExecutionNodeState["status"],
         output: log.output?.raw || (log.output ? JSON.stringify(log.output) : undefined),
+        toolStepCount: Array.isArray(log.steps) ? log.steps.length : 0,
       }))
       setExecutionNodes(nodeStates)
 
@@ -113,13 +114,18 @@ export function ChatPanel({ workflowId }: ChatPanelProps) {
               {executionNodes.map((node) => (
                 <div key={node.nodeId} className="flex items-center gap-2 text-xs">
                   <Badge variant="outline" className={
-                    node.status === "completed" ? "border-green-400 text-green-600" :
-                    node.status === "failed" ? "border-red-400 text-red-600" :
-                    node.status === "running" ? "border-blue-400 text-blue-600" : ""
+                    node.status === "completed" ? "border-success/40 text-success" :
+                    node.status === "failed" ? "border-destructive/40 text-destructive" :
+                    node.status === "running" ? "border-info/40 text-info" : ""
                   }>
                     {t(`execution.${node.status}` as Parameters<typeof t>[0])}
                   </Badge>
                   <span className="text-muted-foreground">{node.label}</span>
+                  {Boolean(node.toolStepCount) && (
+                    <span className="ml-auto flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                      <Wrench className="h-3 w-3" />×{node.toolStepCount}
+                    </span>
+                  )}
                 </div>
               ))}
             </Card>

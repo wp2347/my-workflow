@@ -1,4 +1,4 @@
-import { generateText, tool, type LanguageModel } from "ai"
+import { generateText, tool, stepCountIs, type LanguageModel } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
@@ -8,15 +8,25 @@ import { createMistral } from "@ai-sdk/mistral"
 import { createXai } from "@ai-sdk/xai"
 import { z } from "zod"
 
-import type { WorkflowNode, ExecutionContext, NodeExecutor } from "@/types/workflow"
+import type { WorkflowNode, ExecutionContext, NodeExecutor, ToolCallInfo } from "@/types/workflow"
 import { getProvider } from "@/lib/providers"
+import { resolveCredentialValue } from "@/lib/credential"
+import { mergeExtensions } from "@/engine/extensions/merge"
+import { loadSkills } from "@/engine/extensions/skill-loader"
+import { renderPrompts } from "@/engine/extensions/prompt-renderer"
+import { loadMcpExtensions } from "@/engine/extensions/mcp-manager"
+import { assembleToolCallSteps, type SdkStepLike } from "@/engine/nodes/llm-steps"
+import { searchKnowledge } from "@/lib/rag"
 
+// 内存中的多轮对话历史（按 workflowId + nodeId 分组）
 const conversationMemory = new Map<string, Array<{ role: string; content: string }>>()
 
+/** 生成对话历史的唯一 key */
 function getConversationKey(context: ExecutionContext, nodeId: string): string {
   return `${context.workflowId}-${nodeId}`
 }
 
+/** 收集上游所有节点的 raw 输出，拼接为 LLM 的 user prompt */
 function getPreviousOutputs(_node: WorkflowNode, context: ExecutionContext): string {
   const results: string[] = []
   for (const [, output] of context.nodeResults) {
@@ -28,22 +38,59 @@ function getPreviousOutputs(_node: WorkflowNode, context: ExecutionContext): str
   return results.length > 0 ? results.join("\n\n") : ""
 }
 
+/** 根据 provider 创建对应的 AI SDK LanguageModel */
 function createModel(provider: string, modelId: string, apiKey: string, baseUrl: string): LanguageModel {
   const key = apiKey || ""
+  const createOpenAIProvider = (url: string) => createOpenAI({ apiKey: key, baseURL: url })
   switch (provider) {
-    case "openai": return createOpenAI({ apiKey: key, baseURL: baseUrl })(modelId)
+    case "openai": return createOpenAIProvider(baseUrl || "https://api.openai.com/v1").chat(modelId)
     case "anthropic": return createAnthropic({ apiKey: key, baseURL: baseUrl })(modelId)
     case "google": return createGoogleGenerativeAI({ apiKey: key, baseURL: baseUrl })(modelId)
-    case "deepseek": return createDeepSeek({ apiKey: key, baseURL: baseUrl })(modelId)
+    case "deepseek": return createOpenAIProvider(baseUrl || "https://api.deepseek.com/v1").chat(modelId)
     case "groq": return createGroq({ apiKey: key, baseURL: baseUrl })(modelId)
     case "mistral": return createMistral({ apiKey: key, baseURL: baseUrl })(modelId)
     case "xai": return createXai({ apiKey: key, baseURL: baseUrl })(modelId)
     case "cohere":
     case "openai-compatible":
-    default: return createOpenAI({ apiKey: key, baseURL: baseUrl })(modelId)
+    default: return createOpenAIProvider(baseUrl).chat(modelId)
   }
 }
 
+/** 包装所有工具的 execute：把每次调用的耗时按工具名 FIFO 记录，供 assembleToolCallSteps 消费 */
+function instrumentTools(
+  tools: Record<string, unknown>,
+  timings: Map<string, number[]>,
+): Record<string, unknown> {
+  const wrapped: Record<string, unknown> = {}
+  for (const [name, t] of Object.entries(tools)) {
+    const obj = t as { execute?: (args: unknown) => Promise<unknown> }
+    if (typeof obj?.execute !== "function") { wrapped[name] = t; continue }
+    wrapped[name] = {
+      ...obj,
+      execute: async (args: unknown) => {
+        const start = Date.now()
+        try { return await obj.execute!(args) }
+        finally {
+          const arr = timings.get(name) || []
+          arr.push(Date.now() - start)
+          timings.set(name, arr)
+        }
+      },
+    }
+  }
+  return wrapped
+}
+
+/**
+ * LLM 节点执行器。
+ * 支持功能：
+ *   - 多 Provider（OpenAI / Anthropic / Gemini / DeepSeek / Groq / Mistral / xAI）
+ *   - 多轮对话记忆（memory 参数）
+ *   - 知识库 RAG 增强（knowledgeId）
+ *   - JSON 模式（jsonMode）
+ *   - 工具调用（enableTools，内置天气查询工具）
+ *   - System Prompt 模板
+ */
 export const executeLLMNode: NodeExecutor = async (node, context) => {
   const config = (node.data.config as Record<string, unknown>) || {}
   const provider = (config.provider as string) || "openai"
@@ -53,15 +100,33 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   const maxTokens = (config.maxTokens as number) ?? 4096
   const apiKey = (config.apiKey as string) || ""
   const baseUrl = (config.baseUrl as string) || ""
+  const credentialId = (config.credentialId as string) || ""
   const userInput = getPreviousOutputs(node, context)
+  // Agent 工具耗时采集容器（instrumentTools 写入，assembleToolCallSteps 消费）
+  let agentTimings: Map<string, number[]> | null = null
 
+  // 从 providers 配置中获取默认 API key 和 base URL
   const providerInfo = getProvider(provider)
   const defaultBaseUrl = providerInfo?.defaultBaseUrl || "https://api.openai.com/v1"
   const defaultApiKey = process.env[providerInfo?.defaultApiKeyEnv || ""] || ""
-  const finalApiKey = apiKey || defaultApiKey || process.env.OPENAI_API_KEY || ""
+
+  // 凭证优先：credentialId 非空时从数据库读取解密值作为 key
+  let credentialKey: string | null = null
+  if (credentialId) {
+    credentialKey = await resolveCredentialValue(credentialId)
+    if (!credentialKey) throw new Error(`Credential not found: ${credentialId}`)
+  }
+
+  const finalApiKey = credentialKey ?? (apiKey || defaultApiKey)
   const finalBaseUrl = baseUrl || defaultBaseUrl
 
-  if (!finalApiKey) throw new Error(`No API key for ${providerInfo?.name || provider}`)
+  if (!finalApiKey) {
+    const providerName = providerInfo?.name || provider
+    const envHint = providerInfo?.defaultApiKeyEnv
+      ? `请设置环境变量 ${providerInfo.defaultApiKeyEnv}，或在节点配置中填写 API Key，或绑定全局凭证。`
+      : "请选择厂商后填写对应的 API Key 或绑定全局凭证。"
+    throw new Error(`未找到 ${providerName} 的 API Key。${envHint}`)
+  }
 
   const model = createModel(provider, modelId, finalApiKey, finalBaseUrl)
 
@@ -70,25 +135,54 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   const memory = Math.min((config.memory as number) ?? 0, 20)
   const jsonMode = (config.jsonMode as boolean) ?? false
 
-  // RAG
+  // ===== RAG: 知识库检索增强（直接函数调用，无 HTTP 自调用）=====
   let finalSystem = systemPrompt
   if (knowledgeId) {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/rag/search`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: userInput, topK: 3 }),
-      })
-      const data = await res.json() as { results?: Array<{ content: string }> }
-      const ctx = (data.results || []).map((c, i) => `[片段${i + 1}]\n${c.content}`).join("\n\n")
+      const results = await searchKnowledge(userInput, 3)
+      const ctx = results.map((c, i) => `[片段${i + 1}]\n${c.content}`).join("\n\n")
       if (ctx) finalSystem = `${systemPrompt}\n\n参考知识库：\n${ctx}`
     } catch {}
   }
 
+  // ===== JSON 模式：强制输出 JSON =====
   if (jsonMode && !finalSystem.includes("JSON")) {
     finalSystem += "\n\n必须返回有效JSON格式，不含markdown标记。"
   }
 
-  // Multi-turn memory
+  // ===== 扩展包加载(新增) =====
+  const nodeConfig = (node.data.config as Record<string, unknown>) || {}
+  const extensions = mergeExtensions(context.workflowExtensions, nodeConfig)
+
+  let skillPayload: Awaited<ReturnType<typeof loadSkills>> = { systemContext: [] }
+  let promptPayload: Awaited<ReturnType<typeof renderPrompts>> = { systemPrompts: [], userPrompts: [] }
+  let mcpPayload: Awaited<ReturnType<typeof loadMcpExtensions>> = { tools: {}, resourceContext: [] }
+
+  try {
+    [skillPayload, promptPayload, mcpPayload] = await Promise.all([
+      loadSkills(extensions.skills, context),
+      renderPrompts(extensions.prompts, context),
+      loadMcpExtensions(extensions.mcp, context),
+    ])
+  } catch (error) {
+    console.warn("[llm] Extension loading failed, continuing without:", error)
+  }
+
+  // 注入 system prompt
+  finalSystem = [
+    finalSystem,
+    ...skillPayload.systemContext,
+    ...mcpPayload.resourceContext,
+    ...promptPayload.systemPrompts,
+  ].filter(Boolean).join("\n\n")
+
+  // 注入 user input
+  const finalUserInput = [
+    ...promptPayload.userPrompts,
+    userInput,
+  ].filter(Boolean).join("\n\n")
+
+  // ===== 多轮对话记忆 =====
   const convKey = getConversationKey(context, node.id)
   if (memory > 0) {
     let history = conversationMemory.get(convKey) || []
@@ -98,10 +192,11 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
     conversationMemory.set(convKey, history)
   }
 
+  // ===== 内置工具：天气查询 =====
   const weatherTool = {
     get_weather: tool({
       description: "获取指定城市实时天气",
-      parameters: z.object({ city: z.string().describe("城市英文名如Beijing") }),
+      inputSchema: z.object({ city: z.string().describe("城市英文名如Beijing") }),
       execute: async (args: { city: string }) => {
         const res = await fetch(`https://wttr.in/${encodeURIComponent(args.city)}?format=j1`)
         const data = await res.json() as Record<string, unknown>
@@ -114,28 +209,72 @@ export const executeLLMNode: NodeExecutor = async (node, context) => {
   }
 
   const genOptions: Record<string, unknown> = {
-    model, system: finalSystem, prompt: userInput, temperature, maxOutputTokens: maxTokens,
+    model, system: finalSystem, prompt: finalUserInput, temperature, maxOutputTokens: maxTokens,
   }
+  // 多轮对话：填入历史消息
   if (memory > 0) {
     const history = conversationMemory.get(convKey) || []
     if (history.length > 1) genOptions.messages = history.slice(0, -1).map(m => ({ role: m.role as "user" | "assistant", content: m.content }))
   }
-  if (enableTools) { genOptions.tools = weatherTool; genOptions.maxSteps = 3 }
+
+  // ===== Agent 循环上限（spec：1-20，默认 8；无工具时同样生效但无实际意义）=====
+  const maxStepsRaw = (nodeConfig.maxSteps as number) ?? 8
+  const maxAgentSteps = Math.min(Math.max(Math.round(maxStepsRaw), 1), 20)
+
+  // 内置示例工具（天气）仅在开关打开时注册；MCP/skill 工具始终可用
+  const mergedTools: Record<string, unknown> = {
+    ...(skillPayload.loadSkillTool || {}),
+    ...(mcpPayload.tools || {}),
+    ...(enableTools ? weatherTool : {}),
+  }
+  if (Object.keys(mergedTools).length > 0) {
+    const timings = new Map<string, number[]>()
+    agentTimings = timings
+    genOptions.tools = instrumentTools(mergedTools, timings)
+  }
+  genOptions.maxSteps = maxAgentSteps
+  // stopWhen 确保多步执行(工具调用后自动续轮生成最终回复)
+  genOptions.stopWhen = stepCountIs(maxAgentSteps)
 
   const result = await generateText(genOptions as never)
   const ru = result as unknown as Record<string, unknown>
-  const steps = ru.steps as Array<Record<string, unknown>> | undefined
-  const content = steps?.[0]?.content as Array<{ type: string; text: string }> | undefined
-  const outputText = content?.filter((c) => c.type === "text").map((c) => c.text).join("").trim() || ""
 
+  // 有 tools 时 result.text 应该已包含最终回复(多步执行后)
+  const toolResults = ru.toolResults as Array<Record<string, unknown>> | undefined
+  let outputText = (ru.text as string) || ""
+
+  // fallback: 如果 result.text 为空,从 steps 提取
+  if (!outputText) {
+    const steps = ru.steps as Array<Record<string, unknown>> | undefined
+    outputText = steps?.map((s) => {
+      const content = s.content as Array<{ type: string; text: string }> | undefined
+      return content?.filter((c) => c.type === "text").map((c) => c.text).join("") || ""
+    }).join("").trim() || ""
+  }
+
+  // 最后兜底: 如果有 toolResults 但文本还是很短,用 tool 数据拼
+  if (toolResults && toolResults.length > 0 && (!outputText || outputText.length < 20)) {
+    const toolData = toolResults.map((tr) => JSON.stringify(tr.output)).join("\n")
+    outputText = `工具返回数据:\n${toolData}`
+  }
+
+  // 将助手回复加入对话历史
   if (memory > 0 && outputText) {
     const history = conversationMemory.get(convKey) || []
     history.push({ role: "assistant", content: outputText })
     conversationMemory.set(convKey, history)
   }
 
+  // ===== Agent 步骤装配：SDK steps → ToolCallStep[]/ToolCallInfo[] =====
+  const assembled = assembleToolCallSteps(
+    ((ru.steps as SdkStepLike[] | undefined)) || [],
+    agentTimings ?? new Map(),
+  )
+
   return {
     text: outputText, raw: outputText, model: modelId, provider,
     usage: { promptTokens: (ru.usage as Record<string, number> | undefined)?.inputTokens ?? 0, completionTokens: (ru.usage as Record<string, number> | undefined)?.outputTokens ?? 0 },
+    steps: assembled.steps,
+    toolCalls: assembled.toolCalls satisfies ToolCallInfo[],
   }
 }

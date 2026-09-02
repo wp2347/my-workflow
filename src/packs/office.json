@@ -1,0 +1,25 @@
+{
+  "id": "office",
+  "name": "office",
+  "description": "Generate Word (.docx), Excel (.xlsx), PowerPoint (.pptx) and PDF files from content. All file paths must start with storage/.",
+  "category": "office",
+  "icon": "file-text",
+  "version": "1.0.0",
+  "mcps": [
+    {
+      "name": "office",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["tsx", "src/mcp/office-server.ts"],
+      "tools": "all"
+    }
+  ],
+  "skills": [
+    {
+      "name": "office-usage",
+      "description": "Guide for generating Office and PDF documents.",
+      "category": "office",
+      "content": "You can generate documents with these MCP tools:\n- create_docx({markdown, outputPath}): Word document from Markdown.\n- create_xlsx({rows, outputPath}): Excel spreadsheet from an array of JSON objects (keys become the header row).\n- create_pptx({outline, outputPath}): PowerPoint from a Markdown outline where each top-level heading (#) is a slide and lists become bullets.\n- create_pdf({content, outputPath}): PDF from Markdown.\n\nRules: outputPath must start with storage/ and end with the matching extension. Create the Markdown/JSON content yourself, then call the matching tool. If the user asked for a report, prefer create_docx or create_pdf. If they provided tabular data, use create_xlsx."
+    }
+  ]
+}

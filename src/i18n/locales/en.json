@@ -7,7 +7,12 @@
   "sidebar": {
     "home": "Home",
     "workflows": "Workflows",
-    "newWorkflow": "New Workflow"
+    "newWorkflow": "New Workflow",
+    "extensions": "Extensions",
+    "history": "History",
+    "credentials": "Credentials",
+    "knowledge": "Knowledge",
+    "templates": "Templates"
   },
   "home": {
     "welcome": "Welcome to My Workflow",
@@ -32,7 +37,13 @@
     "delete": "Delete",
     "deleteTitle": "Delete Workflow",
     "deleteDesc": "Are you sure you want to delete \"{name}\"? This action cannot be undone. All nodes, edges, and execution history will be permanently removed.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "musicTemplate": "Music Generation Template",
+    "musicTemplateDesc": "Generate music from a prompt and export it",
+    "completed": "Success",
+    "failed": "Failed",
+    "prev": "Prev",
+    "next": "Next"
   },
   "canvas": {
     "nodes": "Nodes",
@@ -48,11 +59,25 @@
     "httpDesc": "Call external API endpoints",
     "condition": "Condition",
     "conditionDesc": "IF/ELSE branch logic",
+    "merge": "Merge",
+    "mergeDesc": "Combine multiple branch results",
+    "cronTrigger": "Scheduled Trigger",
+    "cronTriggerDesc": "Cron expression scheduled workflow execution",
+    "music": "Music Generation",
+    "musicDesc": "Call music generation API to produce audio",
+    "knowledgeSearch": "Knowledge Retrieval",
+    "knowledgeSearchDesc": "Fetch relevant chunks from knowledge base",
     "dragTips": {
       "drag": "Drag nodes to canvas",
       "connect": "Connect nodes together",
       "click": "Click to configure"
-    }
+    },
+    "code": "Code",
+    "codeDesc": "Run custom JS to transform data",
+    "delay": "Delay",
+    "delayDesc": "Pause for a given number of milliseconds",
+    "loop": "Loop",
+    "loopDesc": "Iterate over arrays (max 1000 items)"
   },
   "config": {
     "selectNode": "Select a node on the canvas to configure",
@@ -78,6 +103,7 @@
     "format": "Format",
     "template": "Template",
     "templatePlaceholder": "Use {{nodeId}} to reference node outputs",
+    "outputResult": "Run result",
     "customModel": "--- Type custom model ID ---",
     "customModelPlaceholder": "Enter model ID, e.g. deepseek-v4-pro",
     "modelsAvailable": "{count} models listed. Select \"Custom\" to type any ID.",
@@ -116,16 +142,21 @@
     "httpMethod": "Method",
     "httpUrl": "URL",
     "httpBody": "Body",
-    "httpBodyHint": "Use {{variable}} to reference upstream output",
-    "retrySettings": "▸ Retry Settings",
-    "maxRetries": "Max Retries",
-    "template": "Template",
+    "httpBodyHint": "Use {{variable}} to reference upstream node output",
     "knowledge": "Knowledge Base",
     "knowledgeNone": "None",
     "knowledgePlaceholder": "No knowledge base",
     "memory": "Conversation Memory",
     "jsonMode": "JSON Mode",
-    "functionCalling": "Function Calling (Weather)",
+    "functionCalling": "Built-in tool calling (weather · example)",
+    "agentMaxSteps": "Tool loop limit",
+    "agentMaxStepsHint": "Max model-tool interaction rounds per run (1-20, default 8)",
+    "knowledgeAll": "All documents",
+    "knowledgeTopK": "Top K results",
+    "knowledgeTopKHint": "Number of most relevant chunks per search (1-20)",
+    "knowledgeQueryTemplate": "Query template",
+    "knowledgeQueryTemplateHint": "Leave empty to use upstream node output as query",
+    "knowledgeSearchHint": "Connect between Input and LLM nodes to enable RAG-augmented answers.",
     "httpAuth": "Authentication",
     "authNone": "None",
     "authBearer": "Bearer Token",
@@ -150,11 +181,11 @@
     "conditionHintFalse": "FALSE → Red port",
     "conditionHintDesc": "Connect to corresponding port to create branches",
     "mergeStrategy": "Merge Strategy",
-    "mergeConcat": "Concatenate",
-    "mergeJsonArray": "JSON Array",
-    "mergeFirst": "First",
-    "mergeLast": "Last",
-    "mergeHint": "Combine outputs from multiple branches by strategy.",
+    "mergeConcat": "Concatenate text",
+    "mergeJsonArray": "JSON array",
+    "mergeFirst": "Take first",
+    "mergeLast": "Take last",
+    "mergeHint": "Merge upstream node outputs by strategy. Often used to combine IF/ELSE branches.",
     "cronName": "Task Name",
     "cronNamePlaceholder": "e.g. Daily Report",
     "cronFrequency": "Frequency",
@@ -182,10 +213,173 @@
     "agentSupportDesc": "You are a tech support agent. Answer technical questions concisely and accurately.",
     "agentTranslator": "Translator",
     "agentTranslatorDesc": "You are a translation expert. Translate text while preserving meaning and style.",
-    "httpMethod": "Method",
-    "httpUrl": "URL",
-    "httpBody": "Body",
-    "httpBodyHint": "Use {{variable}} to reference upstream node output"
+    "musicApiUrl": "API URL",
+    "musicMethod": "Method",
+    "musicHeaders": "Headers",
+    "musicHeadersError": "Invalid JSON",
+    "musicBody": "Body Template",
+    "musicBodyHint": "Placeholders: {{ $input.prompt }}, {{ $input.style }}, {{ $input.duration }}, or {{ nodeId.field }} to reference upstream nodes",
+    "musicAuth": "Authentication",
+    "musicPolling": "Async Polling",
+    "musicPollingHint": "Music generation is usually async; enable to poll by task_id until done",
+    "musicTaskIdField": "Task ID Field Path",
+    "musicPollUrl": "Poll URL Template",
+    "musicPollUrlHint": "e.g. https://api.xxx.com/tasks/{{taskId}}",
+    "musicPollInterval": "Poll Interval (ms)",
+    "musicPollMaxAttempts": "Max Poll Attempts",
+    "musicPollStatusField": "Status Field Path (optional)",
+    "musicPollSuccessValue": "Success Status Value (optional)",
+    "musicResultExtract": "Result Extraction",
+    "musicAudioUrlField": "Audio URL Field Path",
+    "musicMetadataField": "Metadata Field Path (optional)",
+    "exportSettings": "Export Settings",
+    "exportMode": "Export Mode",
+    "exportDownload": "Download to local",
+    "exportLocal": "Save to server directory",
+    "exportRemote": "Upload to remote URL",
+    "exportPath": "Export Directory",
+    "exportPathHint": "Relative to project root, default storage/exports/",
+    "remoteUrl": "Remote Upload URL",
+    "selectCredential": "Select global credential",
+    "credentialManual": "Manual input",
+    "credentialSelected": "Credential selected",
+    "noCredential": "No global credentials yet. Add one in Credentials first.",
+    "credentialLink": "Go to Credentials",
+    "typeFile": "File/Folder",
+    "fileSelect": "Select Local File or Folder",
+    "fileSelectPlaceholder": "Choose a file under storage/",
+    "fileSelectHint": "The selected path is passed to the workflow as the input variable; folders are listed and read by the LLM via the filesystem MCP",
+    "folderBrowse": "Browse local folder…",
+    "folderBrowseTitle": "Select Local Folder",
+    "folderUp": "Up",
+    "folderSelectHint": "Click a folder to enter; selecting adds it to the read whitelist",
+    "folderLoading": "Loading…",
+    "folderEmpty": "Empty or no permission",
+    "folderChoose": "Choose Folder",
+    "codeScript": "JS Script",
+    "codeScriptHint": "Available: items (upstream array), input (workflow input), query (upstream text). Must return a value.",
+    "codeTimeout": "Timeout (ms)",
+    "codeTimeoutHint": "Loops are force-terminated on timeout (50-30000)",
+    "codeSandboxHint": "⚠️ Security note: scripts can only access injected variables; require/process/global are forbidden. This is not a hard sandbox — do not run untrusted code.",
+    "delayDuration": "Duration (ms)",
+    "delayDurationHint": "Max 5 minutes (300000ms)",
+    "loopSource": "Array source expression",
+    "loopSourceHint": "Reference an upstream array output, or paste a JSON array string",
+    "loopItemTemplate": "Per-item template",
+    "loopItemTemplateHint": "$item is the current element; empty means the item itself",
+    "loopLimitHint": "For safety, a single loop runs at most 1000 items.",
+    "noConfig": "No configuration available for this node",
+    "fileBrowseTitle": "Select a local file or folder",
+    "fileSelectedHint": "Click a file to select it; click again to deselect",
+    "fileChoose": "Choose this file",
+    "fsSidebar": "Quick Access",
+    "fsHome": "Home",
+    "fsDesktop": "Desktop",
+    "fsDownloads": "Downloads",
+    "fsDocuments": "Documents",
+    "fsName": "Name",
+    "fsSize": "Size",
+    "fsModified": "Date Modified",
+    "fsItems": "{count} items"
+  },
+  "audioResult": {
+    "preview": "Preview",
+    "download": "Download",
+    "clear": "Clear",
+    "clearing": "Clearing…",
+    "cleared": "Cleared",
+    "noMetadata": "No metadata",
+    "metadata": "Metadata",
+    "title": "Title",
+    "duration": "Duration",
+    "style": "Style",
+    "clearFailed": "Clear failed, please retry",
+    "play": "Play",
+    "pause": "Pause",
+    "seek": "Seek",
+    "unavailable": "Audio unavailable",
+    "retry": "Retry",
+    "fields": {
+      "title": "Title",
+      "duration": "Duration",
+      "style": "Style",
+      "artist": "Artist",
+      "album": "Album",
+      "genre": "Genre",
+      "format": "Format",
+      "model": "Model",
+      "lyrics": "Lyrics",
+      "sample_rate": "Sample Rate",
+      "channels": "Channels",
+      "length": "Length",
+      "bitrate": "Bitrate",
+      "music_duration": "Duration",
+      "music_sample_rate": "Sample Rate",
+      "music_channel": "Channel",
+      "music_size": "File Size"
+    }
+  },
+  "templates": {
+    "title": "Templates",
+    "description": "Choose a preset template to quickly create a workflow",
+    "useTemplate": "Use template",
+    "noTemplates": "No templates available",
+    "category": {
+      "music": "Music",
+      "llm": "LLM Apps",
+      "automation": "Automation",
+      "file": "File"
+    },
+    "list": {
+      "dailyBrief": {
+        "name": "Daily News Brief",
+        "description": "Fetch trending news on schedule, summarize with AI, push to Feishu"
+      },
+      "llmApps": {
+        "name": "AI Translation Assistant",
+        "description": "Input any text and get AI-powered translation"
+      },
+      "modelCompare": {
+        "name": "Multi-Model Comparison",
+        "description": "Send the same question to two AI models and compare answers"
+      },
+      "supportRouting": {
+        "name": "Smart Support Routing",
+        "description": "Route questions by intent: technical issues to tech support, others to general reply"
+      },
+      "reminder": {
+        "name": "Scheduled Reminder",
+        "description": "Send a Feishu reminder message on a schedule"
+      },
+      "music": {
+        "name": "Music Generation Template",
+        "description": "Generate music from a prompt and export it"
+      },
+      "fileToDocx": {
+        "name": "Local Files to Word Report",
+        "description": "Read files under storage/ and generate a Word report with AI"
+      },
+      "dataToXlsx": {
+        "name": "Data to Excel Report",
+        "description": "Turn described data into a spreadsheet and generate an Excel file with AI"
+      },
+      "markdownToPptx": {
+        "name": "Outline to PPT",
+        "description": "Enter a topic, AI generates a Markdown outline and a PPT file"
+      },
+      "folderBatchSummary": {
+        "name": "Folder Batch Summary Report",
+        "description": "Walk every document in a local folder, summarize each, and compile a Word report"
+      },
+      "xlsxDataInsight": {
+        "name": "Spreadsheet Insights to PPT",
+        "description": "Read a local spreadsheet (xlsx/csv), let AI analyze insights and generate a slide deck"
+      },
+      "feishuAssistant": {
+        "name": "Feishu Chat Assistant",
+        "description": "A tool-capable AI assistant that answers when @mentioned in a Feishu group"
+      }
+    }
   },
   "chat": {
     "title": "Test Chat",
@@ -201,5 +395,231 @@
     "completed": "completed",
     "failed": "failed",
     "idle": "idle"
+  },
+  "extensions": {
+    "title": "Extension Management",
+    "tabs": {
+      "skills": "Skills",
+      "prompts": "Prompts",
+      "mcp": "MCP Servers",
+      "packs": "Skill Packs"
+    },
+    "common": {
+      "create": "Create",
+      "upload": "Upload",
+      "export": "Export",
+      "delete": "Delete",
+      "search": "Search",
+      "edit": "Edit",
+      "save": "Save",
+      "cancel": "Cancel",
+      "confirmDelete": "Are you sure? This cannot be undone.",
+      "noData": "No data",
+      "name": "Name",
+      "description": "Description",
+      "category": "Category",
+      "tags": "Tags",
+      "addTag": "Add tag",
+      "updated": "Updated"
+    },
+    "skills": {
+      "namePlaceholder": "Skill name (≤64 chars)",
+      "descPlaceholder": "Third-person description of what it does and when to use (≤1024 chars)",
+      "descHint": "💡 Use third person, e.g. \"Processes PDF files. Use when working with PDFs.\"",
+      "contentLabel": "SKILL.md content",
+      "attachments": "Attachments",
+      "uploadAttachment": "Upload attachment",
+      "attachmentType": {
+        "reference": "Reference",
+        "script": "Script"
+      },
+      "charCount": "characters"
+    },
+    "prompts": {
+      "namePlaceholder": "Prompt name",
+      "contentLabel": "Template content",
+      "contentHint": "Use {{variableName}} or {{$input.field}} to reference variables",
+      "role": "Inject to",
+      "roleSystem": "System Prompt",
+      "roleUser": "User Input",
+      "variables": "Variables",
+      "varName": "Name",
+      "varDesc": "Description",
+      "varRequired": "Required",
+      "varDefault": "Default",
+      "addVariable": "Add variable",
+      "preview": "Preview (with defaults)"
+    },
+    "mcp": {
+      "transport": "Transport",
+      "transportHttp": "HTTP",
+      "transportSse": "SSE",
+      "transportStdio": "Stdio",
+      "url": "URL",
+      "urlPlaceholder": "https://mcp-server.example.com",
+      "headers": "Headers",
+      "command": "Command",
+      "commandPlaceholder": "npx",
+      "args": "Arguments",
+      "argsPlaceholder": "[-y, @modelcontextprotocol/server-sqlite]",
+      "env": "Environment",
+      "testConnection": "Test Connection",
+      "testing": "Testing...",
+      "statusOnline": "Online",
+      "statusOffline": "Offline",
+      "statusError": "Error",
+      "statusUntested": "Untested",
+      "capabilities": "Capabilities",
+      "tools": "Tools",
+      "resources": "Resources",
+      "promptsLabel": "Prompts",
+      "stdioWarning": "⚠️ Stdio is for self-hosted only. Use HTTP/SSE for cloud."
+    },
+    "picker": {
+      "title": "Extensions",
+      "addSkill": "Add Skill",
+      "addPrompt": "Add Prompt",
+      "addMcp": "Add MCP",
+      "selectSkills": "Select Skills",
+      "selectPrompts": "Select Prompts",
+      "selectMcp": "Select MCP Server",
+      "toolsConfig": "Tools config",
+      "allTools": "All tools",
+      "selectedTools": "Selected tools",
+      "resources": "Resources",
+      "inherited": "Inherited from workflow"
+    }
+  },
+  "history": {
+    "title": "Execution History",
+    "description": "View execution records of all workflows",
+    "noExecutions": "No execution records",
+    "noExecutionsDesc": "Execution history will appear here after running workflows",
+    "filterAll": "All",
+    "filterCompleted": "Completed",
+    "filterFailed": "Failed",
+    "filterRunning": "Running",
+    "rerun": "Re-run"
+  },
+  "historyDetail": {
+    "notFound": "Execution record not found",
+    "title": "Execution Details",
+    "completed": "Success",
+    "failed": "Failed",
+    "output": "Output Data",
+    "toolSteps": "Tool Call Steps",
+    "argsSummary": "Arguments",
+    "resultSummary": "Result"
+  },
+  "credentials": {
+    "title": "Credentials",
+    "description": "AES-256 encrypted storage. Click the eye to view plaintext, click the key to copy",
+    "add": "Add Credential",
+    "noCreds": "No credentials",
+    "noCredsDesc": "Add sensitive credentials like API keys",
+    "copy": "Click to copy",
+    "view": "Click the eye to view",
+    "copied": "Copied",
+    "addTitle": "Add Credential",
+    "addDesc": "AES-256 encrypted storage to database",
+    "name": "Name",
+    "namePlaceholder": "e.g. DeepSeek API Key",
+    "type": "Type",
+    "value": "Value",
+    "scope": "Scope",
+    "global": "Global",
+    "workflow": "Workflow",
+    "node": "Node",
+    "cancel": "Cancel",
+    "save": "Save",
+    "deleteTitle": "Delete Credential",
+    "deleteDesc": "Delete \"{name}\"? This cannot be undone.",
+    "delete": "Delete"
+  },
+  "knowledge": {
+    "title": "Knowledge Base",
+    "description": "Upload documents, vectorize for RAG-enhanced generation",
+    "addDoc": "Add Document",
+    "noDocs": "No documents",
+    "noDocsDesc": "Upload PDF/TXT/Markdown to build a knowledge base",
+    "uploadFile": "Upload File",
+    "manualInput": "or enter manually",
+    "manualInputName": "Manual input",
+    "docName": "Document Name",
+    "docNamePlaceholder": "Document name",
+    "content": "Content",
+    "contentPlaceholder": "Paste document content...",
+    "cancel": "Cancel",
+    "upload": "Upload",
+    "chunks": "{count} chunks · {type}",
+    "chunkSize": "{size} chars/chunk"
+  },
+  "toolbar": {
+    "run": "Run",
+    "webhook": "Webhook",
+    "webhookTitle": "Webhook URL",
+    "webhookDesc": "POST requests to this address trigger the workflow",
+    "copied": "Copied",
+    "copy": "Copy URL",
+    "curlExample": "curl example:",
+    "status": "Status: {status}",
+    "duration": "Duration: {duration}ms",
+    "error": "   Error: {error}",
+    "output": "   Output: {output}",
+    "requestFailed": "Request failed: {error}",
+    "runResultTitle": "Execution Result"
+  },
+  "cronNode": {
+    "label": "Cron",
+    "unconfigured": "Not configured",
+    "hourly": "Hourly",
+    "daily": "Daily {time}",
+    "weekday": "Weekdays {time}",
+    "weekly": "Weekly {day} {time}",
+    "days": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    }
+  },
+  "widget": {
+    "requestFailed": "Request failed, please retry",
+    "startChat": "Send a message to start chatting",
+    "inputPlaceholder": "Type a message..."
+  },
+  "workflow": {
+    "untitled": "Untitled Workflow"
+  },
+  "packs": {
+    "title": "Skill Packs",
+    "install": "Install",
+    "uninstall": "Uninstall",
+    "uninstallConfirm": "Uninstall pack \"{name}\"? Installed MCP servers and skills will be removed.",
+    "installed": "Installed",
+    "import": "Import Pack",
+    "importTitle": "Import Skill Pack",
+    "importPlaceholder": "Paste the pack manifest JSON...",
+    "importInvalidJson": "Invalid JSON, please check the format",
+    "empty": "No packs yet",
+    "source": {
+      "official": "Official",
+      "imported": "Imported"
+    },
+    "office": {
+      "name": "Document Generation",
+      "description": "Generate Word/Excel/PPT/PDF files from LLM content (Markdown/JSON converted automatically)"
+    },
+    "filesystem": {
+      "name": "Local File Access",
+      "description": "List, read and search local files under the storage/ directory for workflows"
+    }
+  },
+  "fileResult": {
+    "binaryHint": "This file is a binary format. Download it below to view locally."
   }
 }

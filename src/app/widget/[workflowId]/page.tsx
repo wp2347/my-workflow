@@ -5,10 +5,12 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, Loader2, Bot, User, MessageSquare } from "lucide-react"
+import { useTranslation } from "@/i18n"
 
 interface Message { id: string; role: "user" | "assistant"; content: string }
 
 export default function WidgetPage() {
+  const { t } = useTranslation()
   const params = useParams()
   const workflowId = params.workflowId as string
   const [messages, setMessages] = useState<Message[]>([])
@@ -36,7 +38,7 @@ export default function WidgetPage() {
       if (typeof content === "object") content = JSON.stringify(content)
       setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", content }])
     } catch {
-      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", content: "请求失败，请重试" }])
+      setMessages(prev => [...prev, { id: crypto.randomUUID(), role: "assistant", content: t("widget.requestFailed") }])
     } finally { setLoading(false) }
   }
 
@@ -48,7 +50,7 @@ export default function WidgetPage() {
       </div>
       <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center text-muted-foreground mt-20">发送消息开始对话</div>
+          <div className="text-center text-muted-foreground mt-20">{t("widget.startChat")}</div>
         )}
         {messages.map(m => (
           <div key={m.id} className={`flex gap-3 ${m.role === "user" ? "justify-end" : ""}`}>
@@ -61,7 +63,7 @@ export default function WidgetPage() {
       </div>
       <div className="p-3 border-t">
         <div className="flex gap-2">
-          <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send() }} placeholder="输入消息..." disabled={loading} />
+          <Input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") send() }} placeholder={t("widget.inputPlaceholder")} disabled={loading} />
           <Button size="icon" onClick={send} disabled={loading}><Send className="h-4 w-4" /></Button>
         </div>
       </div>

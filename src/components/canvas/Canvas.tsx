@@ -1,6 +1,8 @@
 "use client"
 
 import { useCallback, useRef } from "react"
+import { type NodeType } from "@/types/workflow"
+
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -25,6 +27,11 @@ import { HttpNodeComponent } from "@/components/nodes/HttpNode"
 import { ConditionNodeComponent } from "@/components/nodes/ConditionNode"
 import { MergeNodeComponent } from "@/components/nodes/MergeNode"
 import { CronTriggerNodeComponent } from "@/components/nodes/CronTriggerNode"
+import { MusicNodeComponent } from "@/components/nodes/MusicNode"
+import { KnowledgeSearchNodeComponent } from "@/components/nodes/KnowledgeSearchNode"
+import { CodeNodeComponent } from "@/components/nodes/CodeNode"
+import { DelayNodeComponent } from "@/components/nodes/DelayNode"
+import { LoopNodeComponent } from "@/components/nodes/LoopNode"
 
 const nodeTypes = {
   input: InputNodeComponent,
@@ -35,6 +42,11 @@ const nodeTypes = {
   condition: ConditionNodeComponent,
   merge: MergeNodeComponent,
   cron_trigger: CronTriggerNodeComponent,
+  music: MusicNodeComponent,
+  knowledge_search: KnowledgeSearchNodeComponent,
+  code: CodeNodeComponent,
+  delay: DelayNodeComponent,
+  loop: LoopNodeComponent,
 }
 
 export function Canvas() {
@@ -99,12 +111,12 @@ function CanvasInner() {
 
       addNode({
         id,
-        type: type as "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger",
+        type: type as NodeType,
         position,
         data: {
-          type: type as "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger",
+          type: type as NodeType,
           label: label || type,
-          config: getDefaultConfig(type as "input" | "llm" | "output"),
+          config: getDefaultConfig(type as NodeType),
         },
       })
     },
@@ -118,7 +130,7 @@ function CanvasInner() {
         edges={edges.map((e) => ({
           ...e,
           markerEnd: { type: MarkerType.ArrowClosed },
-          style: { strokeWidth: 2, stroke: "#94a3b8" },
+          style: { strokeWidth: 2, stroke: "var(--canvas-edge)" },
         })) as unknown as Edge[]}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -134,7 +146,7 @@ function CanvasInner() {
           animated: true,
         }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="var(--canvas-dot)" />
         <Controls />
         <MiniMap
           nodeStrokeWidth={3}
@@ -146,7 +158,7 @@ function CanvasInner() {
   )
 }
 
-function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger"): Record<string, unknown> {
+function getDefaultConfig(type: NodeType): Record<string, unknown> {
   switch (type) {
     case "input":
       return { name: "message", type: "text", required: true }
@@ -161,7 +173,7 @@ function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" |
         maxTokens: 4096,
       }
     case "output":
-      return { format: "text", template: "" }
+      return { format: "text", template: "", exportMode: "download", exportPath: "storage/exports/", remoteUrl: "" }
     case "http":
       return { method: "GET", url: "", headers: {}, body: "", auth: "none", authUsername: "", authPassword: "", authToken: "" }
     case "condition":
@@ -169,8 +181,34 @@ function getDefaultConfig(type: "input" | "llm" | "output" | "feishu" | "http" |
     case "merge":
       return { strategy: "concat" }
     case "cron_trigger":
-      return { name: "定时任务", cronExpr: "0 9 * * *", timezone: "Asia/Shanghai", frequency: "daily" }
+      return { name: "Cron Job", cronExpr: "0 9 * * *", timezone: "Asia/Shanghai", frequency: "daily" }
     case "feishu":
       return { mode: "send", appId: "", appSecret: "", verificationToken: "", webhookUrl: "", message: "", msgType: "text" }
+    case "music":
+      return {
+        apiUrl: "",
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        bodyTemplate: '{\n  "prompt": "{{ $input.prompt }}",\n  "style": "",\n  "duration": 0\n}',
+        auth: "none",
+        authToken: "",
+        pollingEnabled: false,
+        taskIdField: "data.task_id",
+        pollUrlTemplate: "",
+        pollIntervalMs: 3000,
+        pollMaxAttempts: 60,
+        pollStatusField: "",
+        pollSuccessValue: "",
+        audioUrlField: "data.audio_url",
+        metadataField: "data.metadata",
+      }
+    case "knowledge_search":
+      return { knowledgeId: "", topK: 3, queryTemplate: "" }
+    case "code":
+      return { code: "return items.length", timeoutMs: 3000 }
+    case "delay":
+      return { durationMs: 1000 }
+    case "loop":
+      return { sourcePath: "{{ $node.input-1.results }}", itemTemplate: "{{ $item }}" }
   }
 }

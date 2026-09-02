@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 扩展包附件存储(不提交到 git)
+/storage/
+
+# git worktrees
+.worktrees/
+
+# brainstorming visual companion session
+.superpowers/

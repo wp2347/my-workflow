@@ -2,12 +2,14 @@
 
 import { useRouter } from "next/navigation"
 import { useWorkflowStore } from "@/stores/workflow"
+import { useRunResultsStore } from "@/stores/runResults"
 import { useTranslation } from "@/i18n"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { MusicPlayer } from "@/components/music/MusicPlayer"
 import { Save, Play, ArrowLeft, Loader2, Zap, Webhook } from "lucide-react"
 import { useState } from "react"
 
@@ -15,9 +17,11 @@ export function Toolbar() {
   const router = useRouter()
   const { t } = useTranslation()
   const { workflowId, workflowName, setWorkflowName, nodes, edges, isDirty, markClean } = useWorkflowStore()
+  const setNodeResult = useRunResultsStore((s) => s.setNodeResult)
   const [saving, setSaving] = useState(false)
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState<string | null>(null)
+  const [runAudio, setRunAudio] = useState<{ audioUrl: string; fileName: string } | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [showWebhook, setShowWebhook] = useState(false)
   const [webhookUrl, setWebhookUrl] = useState("")
@@ -51,6 +55,7 @@ export function Toolbar() {
     if (!workflowId) return
     setRunning(true)
     setRunResult(null)
+    setRunAudio(null)
     try {
       // Get workflow to read notifyChatId
       const wfRes = await fetch(`/api/workflow/${workflowId}`)
@@ -64,25 +69,58 @@ export function Toolbar() {
       })
       const data = await res.json()
 
+      // 将 output 节点的音频结果与文件产物写入持久化 store（下次执行时自动覆盖）
+      let foundAudio: { audioUrl: string; fileName: string } | null = null
+      for (const log of data.logs || []) {
+        const out = log.output as Record<string, unknown> | null
+        if (!out || typeof out !== "object") continue
+        const isAudio = typeof out.audioUrl === "string"
+        const isFile = typeof out.filePath === "string"
+        if (isAudio || isFile) {
+          const base = {
+            fileName: (out.fileName as string) || (isFile ? "output.bin" : "audio"),
+            metadata: (out.metadata as Record<string, unknown>) || {},
+            executionId: data.executionId,
+            status: data.status,
+            updatedAt: new Date().toISOString(),
+          }
+          setNodeResult(workflowId, log.nodeId, isAudio
+            ? { ...base, kind: "audio", audioUrl: out.audioUrl as string }
+            : {
+              ...base, kind: "file",
+              filePath: out.filePath as string,
+              fileSize: (out.fileSize as number) || undefined,
+              preview: typeof out.raw === "string" ? (out.raw as string).slice(0, 2000) : undefined,
+            })
+          if (isAudio && !foundAudio) {
+            foundAudio = {
+              audioUrl: out.audioUrl as string,
+              fileName: base.fileName,
+            }
+          }
+        }
+      }
+      setRunAudio(foundAudio)
+
       const lines: string[] = []
-      lines.push(`状态: ${data.status}`)
-      lines.push(`耗时: ${data.durationMs}ms`)
+      lines.push(t("toolbar.status", { status: data.status }))
+      lines.push(t("toolbar.duration", { duration: data.durationMs }))
       lines.push("")
 
       for (const log of data.logs || []) {
         const icon = log.status === "completed" ? "✅" : "❌"
         lines.push(`${icon} ${log.nodeType.toUpperCase()}`)
-        if (log.error) lines.push(`   错误: ${log.error}`)
+        if (log.error) lines.push(t("toolbar.error", { error: log.error }))
         if (log.output) {
           const out = typeof log.output === "string" ? log.output : JSON.stringify(log.output)
-          if (out.length > 200) lines.push(`   输出: ${out.substring(0, 200)}...`)
-          else if (out) lines.push(`   输出: ${out}`)
+          if (out.length > 200) lines.push(t("toolbar.output", { output: out.substring(0, 200) + "..." }))
+          else if (out) lines.push(t("toolbar.output", { output: out }))
         }
         lines.push("")
       }
       setRunResult(lines.join("\n"))
     } catch (err) {
-      setRunResult(`请求失败: ${err instanceof Error ? err.message : String(err)}`)
+      setRunResult(t("toolbar.requestFailed", { error: err instanceof Error ? err.message : String(err) }))
     } finally {
       setRunning(false)
       setShowResult(true)
@@ -138,10 +176,10 @@ export function Toolbar() {
           </Button>
           <Button size="sm" variant="secondary" onClick={handleRun} disabled={!workflowId || running}>
             {running ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Zap className="h-4 w-4 mr-1" />}
-            执行
+            {t("toolbar.run")}
           </Button>
           <Button size="sm" variant="outline" onClick={handleWebhook} disabled={!workflowId}>
-            <Webhook className="h-4 w-4 mr-1" />Webhook
+            <Webhook className="h-4 w-4 mr-1" />{t("toolbar.webhook")}
           </Button>
           <Button size="sm" onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
@@ -153,18 +191,18 @@ export function Toolbar() {
       <Dialog open={showWebhook} onOpenChange={setShowWebhook}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Webhook URL</DialogTitle>
-            <DialogDescription>POST 请求到此地址将触发工作流执行</DialogDescription>
+            <DialogTitle>{t("toolbar.webhookTitle")}</DialogTitle>
+            <DialogDescription>{t("toolbar.webhookDesc")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <code className="block p-3 bg-muted rounded-lg text-sm font-mono break-all select-all">
               {webhookUrl}
             </code>
             <Button size="sm" onClick={copyWebhook}>
-              {webhookCopied ? "已复制" : "复制地址"}
+              {webhookCopied ? t("toolbar.copied") : t("toolbar.copy")}
             </Button>
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>curl 示例：</p>
+              <p>{t("toolbar.curlExample")}</p>
               <code className="block p-2 bg-muted rounded text-xs">
                 {`curl -X POST "${webhookUrl}" \\\n  -H "Content-Type: application/json" \\\n  -d '{"message":"hello"}'`}
               </code>
@@ -176,8 +214,13 @@ export function Toolbar() {
       <Dialog open={showResult} onOpenChange={setShowResult}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>执行结果</DialogTitle>
+            <DialogTitle>{t("toolbar.runResultTitle")}</DialogTitle>
           </DialogHeader>
+          {runAudio && (
+            <div className="rounded-xl border border-node-music-bg bg-node-music-bg/40 p-3">
+              <MusicPlayer audioUrl={runAudio.audioUrl} fileName={runAudio.fileName} />
+            </div>
+          )}
           <ScrollArea className="max-h-[60vh]">
             <pre className="text-xs whitespace-pre-wrap break-all font-mono">{runResult}</pre>
           </ScrollArea>

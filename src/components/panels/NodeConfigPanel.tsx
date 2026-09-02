@@ -1,19 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { useWorkflowStore } from "@/stores/workflow"
 import type { WorkflowNode } from "@/types/workflow"
-import { PROVIDERS } from "@/lib/providers"
 import { useTranslation } from "@/i18n"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Badge } from "@/components/ui/badge"
-import { Trash2, ExternalLink, Eye, EyeOff } from "lucide-react"
+import { Trash2 } from "lucide-react"
+import { LlmConfig } from "@/components/panels/configs/LlmConfig"
+import { KnowledgeSearchConfig } from "@/components/panels/configs/KnowledgeSearchConfig"
+import { CodeConfig } from "@/components/panels/configs/CodeConfig"
+import { DelayConfig } from "@/components/panels/configs/DelayConfig"
+import { LoopConfig } from "@/components/panels/configs/LoopConfig"
+import { InputConfig } from "@/components/panels/configs/InputConfig"
+import { OutputConfig } from "@/components/panels/configs/OutputConfig"
+import { MusicConfig } from "@/components/panels/configs/MusicConfig"
+import { HttpConfig } from "@/components/panels/configs/HttpConfig"
+import { ConditionConfig } from "@/components/panels/configs/ConditionConfig"
+import { MergeConfig } from "@/components/panels/configs/MergeConfig"
+import { CronConfig } from "@/components/panels/configs/CronConfig"
+import { FeishuConfig } from "@/components/panels/configs/FeishuConfig"
 
 interface NodeConfigPanelProps { node: WorkflowNode }
 
@@ -21,36 +28,6 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
   const { t } = useTranslation()
   const { updateNodeData, removeNode, setSelectedNodeId } = useWorkflowStore()
   const config = (node.data.config as Record<string, unknown>) || {}
-  const [showApiKey, setShowApiKey] = useState(false)
-  const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([])
-
-  // Cron local state
-  const [cronFrequency, setCronFrequency] = useState(() => (config.frequency as string) || "daily")
-  const [cronHour, setCronHour] = useState(() => ((config.cronExpr as string) || "0 9 * * *").split(" ")[1] || "9")
-  const [cronMinute, setCronMinute] = useState(() => ((config.cronExpr as string) || "0 9 * * *").split(" ")[0] || "0")
-
-  const cronFrequencyLabel: Record<string, string> = {
-    hourly: t("config.cronHourly"),
-    daily: t("config.cronDaily"),
-    weekday: t("config.cronWeekday"),
-    "weekly-0": t("config.cronSunday"), "weekly-1": t("config.cronMonday"),
-    "weekly-2": t("config.cronTuesday"), "weekly-3": t("config.cronWednesday"),
-    "weekly-4": t("config.cronThursday"), "weekly-5": t("config.cronFriday"),
-    "weekly-6": t("config.cronSaturday"),
-  }
-
-  useEffect(() => {
-    fetch("/api/documents").then(r => r.json()).then(setDocuments).catch(() => {})
-  }, [])
-
-  // Reset cron state when node changes
-  useEffect(() => {
-    if (!node.id) return
-    setCronFrequency((config.frequency as string) || "daily")
-    const parts = ((config.cronExpr as string) || "0 9 * * *").split(" ")
-    setCronHour(parts[1] || "9")
-    setCronMinute(parts[0] || "0")
-  }, [node.id])
 
   const updateConfig = (key: string, value: unknown) => {
     updateNodeData(node.id, { config: { ...config, [key]: value } })
@@ -58,445 +35,27 @@ export function NodeConfigPanel({ node }: NodeConfigPanelProps) {
 
   const handleDelete = () => { removeNode(node.id); setSelectedNodeId(null) }
 
-  const getCronTime = (cfg: Record<string, unknown>) => {
-    const expr = (cfg.cronExpr as string) || "0 9 * * *"
-    const parts = expr.split(" ")
-    return { minute: parts[0] || "0", hour: parts[1] || "9" }
+  const components: Partial<Record<string, React.FC<{ node: WorkflowNode }>>> = {
+    input: InputConfig,
+    llm: LlmConfig,
+    output: OutputConfig,
+    music: MusicConfig,
+    http: HttpConfig,
+    condition: ConditionConfig,
+    merge: MergeConfig,
+    cron_trigger: CronConfig,
+    feishu: FeishuConfig,
+    knowledge_search: KnowledgeSearchConfig,
+    code: CodeConfig,
+    delay: DelayConfig,
+    loop: LoopConfig,
   }
-
-  const selectedProvider = PROVIDERS.find((p) => p.id === (config.provider as string || "openai"))
-
-  const handleProviderChange = (providerId: string | null) => {
-    if (!providerId) return
-    const provider = PROVIDERS.find((p) => p.id === providerId)
-    updateNodeData(node.id, {
-      config: { ...config, provider: providerId, model: provider?.models[0]?.id || "", baseUrl: provider?.defaultBaseUrl || "", apiKey: config.apiKey || "" },
-    })
-  }
+  const ConfigComponent = components[node.data.type]
 
   return (
     <div className="p-4 space-y-5">
-      {/* ===== INPUT NODE ===== */}
-      {node.data.type === "input" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="input-name">{t("config.variableName")}</Label>
-            <Input id="input-name" value={(config.name as string) || ""} onChange={(e) => updateConfig("name", e.target.value)} placeholder="e.g. message" />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("config.type")}</Label>
-            <Select value={(config.type as string) || "text"} onValueChange={(v) => updateConfig("type", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="number">Number</SelectItem>
-                <SelectItem value="boolean">Boolean</SelectItem>
-                <SelectItem value="json">JSON</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="input-required">{t("config.required")}</Label>
-            <Switch id="input-required" checked={(config.required as boolean) || false} onCheckedChange={(v) => updateConfig("required", v)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="input-default">{t("config.defaultValue")}</Label>
-            <Input id="input-default" value={(config.default as string) || ""} onChange={(e) => updateConfig("default", e.target.value)} placeholder="Optional" />
-          </div>
-        </div>
-      )}
-
-      {/* ===== LLM NODE ===== */}
-      {node.data.type === "llm" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t("config.provider")}</Label>
-            <Select value={(config.provider as string) || "openai"} onValueChange={handleProviderChange}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-72">
-                {PROVIDERS.map((prov) => (
-                  <SelectItem key={prov.id} value={prov.id}><span className="flex items-center gap-2">{prov.name}<Badge variant="outline" className="text-[10px] px-1 py-0">{prov.models.length}</Badge></span></SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="llm-apikey" className="text-xs text-muted-foreground">{t("config.apiKey")}</Label>
-              {selectedProvider && (
-                <a href={selectedProvider.docs} target="_blank" rel="noopener noreferrer" className="text-[10px] text-primary hover:underline flex items-center gap-0.5">{t("config.getKey")}<ExternalLink className="h-2.5 w-2.5" /></a>
-              )}
-            </div>
-            <div className="relative">
-              <Input id="llm-apikey" type={showApiKey ? "text" : "password"} value={(config.apiKey as string) || ""} onChange={(e) => updateConfig("apiKey", e.target.value)} placeholder={selectedProvider ? `Env: ${selectedProvider.defaultApiKeyEnv}` : t("config.apiKeyPlaceholder")} className="pr-8 text-sm font-mono" />
-              <button type="button" onClick={() => setShowApiKey(!showApiKey)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">{showApiKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}</button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">{t("config.apiKeyHint", { env: selectedProvider?.defaultApiKeyEnv || "OPENAI_API_KEY" })}</p>
-          </div>
-          <details className="text-xs">
-            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{t("config.advanced")}</summary>
-            <div className="mt-2"><Input value={(config.baseUrl as string) || ""} onChange={(e) => updateConfig("baseUrl", e.target.value)} placeholder={selectedProvider?.defaultBaseUrl} className="text-sm font-mono" /></div>
-          </details>
-          <div className="space-y-2">
-            <Label>{t("config.model")}</Label>
-            <Select value={(config.model as string) || selectedProvider?.models[0]?.id || ""} onValueChange={(v) => { if (v === "__custom__") { updateConfig("model", ""); updateConfig("customModel", true) } else { updateConfig("model", v); updateConfig("customModel", false) } }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-60">
-                {selectedProvider?.models.map((m) => (
-                  <SelectItem key={m.id} value={m.id}><span className="flex items-center justify-between w-full gap-2"><span className="truncate">{m.name}</span><Badge variant="secondary" className="text-[10px] px-1 py-0 flex-shrink-0">{m.contextWindow >= 1000 ? `${(m.contextWindow / 1000).toFixed(0)}K` : m.contextWindow}</Badge></span></SelectItem>
-                ))}
-                <SelectItem value="__custom__" className="text-muted-foreground italic">{t("config.customModel")}</SelectItem>
-              </SelectContent>
-            </Select>
-            {(config.customModel as boolean) && <Input value={(config.model as string) || ""} onChange={(e) => updateConfig("model", e.target.value)} placeholder={t("config.customModelPlaceholder")} className="text-sm font-mono mt-1" />}
-          </div>
-          <Separator />
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="llm-system-prompt">{t("config.systemPrompt")}</Label>
-              <Select value="" onValueChange={(v) => { if (v) updateConfig("systemPrompt", v) }}>
-                <SelectTrigger className="w-24 h-6 text-[10px]">              <SelectValue placeholder={t("config.template")} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={t("config.agentAnalystDesc")}>{t("config.agentAnalyst")}</SelectItem>
-                  <SelectItem value={t("config.agentReviewerDesc")}>{t("config.agentReviewer")}</SelectItem>
-                  <SelectItem value={t("config.agentWriterDesc")}>{t("config.agentWriter")}</SelectItem>
-                  <SelectItem value={t("config.agentSupportDesc")}>{t("config.agentSupport")}</SelectItem>
-                  <SelectItem value={t("config.agentTranslatorDesc")}>{t("config.agentTranslator")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Textarea id="llm-system-prompt" value={(config.systemPrompt as string) || ""} onChange={(e) => updateConfig("systemPrompt", e.target.value)} placeholder="You are a helpful assistant." rows={5} className="text-sm" />
-          </div>
-          {documents.length > 0 && (
-            <div className="space-y-2">
-              <Label>{t("config.knowledge")}</Label>
-              <Select value={(config.knowledgeId as string) || ""} onValueChange={(v) => updateConfig("knowledgeId", v === "_none" ? "" : v)}>
-                <SelectTrigger><SelectValue placeholder={t("config.knowledgePlaceholder")} /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">{t("config.knowledgeNone")}</SelectItem>
-                  {documents.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2"><Label htmlFor="llm-temperature" className="text-xs">{t("config.temperature")}</Label><Input id="llm-temperature" type="number" min={0} max={2} step={0.1} value={config.temperature as number ?? 0.7} onChange={(e) => updateConfig("temperature", parseFloat(e.target.value))} /></div>
-            <div className="space-y-2"><Label htmlFor="llm-max-tokens" className="text-xs">{t("config.maxTokens")}</Label><Input id="llm-max-tokens" type="number" min={1} max={128000} step={1} value={config.maxTokens as number ?? 4096} onChange={(e) => updateConfig("maxTokens", parseInt(e.target.value))} /></div>
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <Label htmlFor="llm-memory" className="text-xs text-muted-foreground">{t("config.memory")}</Label>
-            <Input id="llm-memory" type="number" min={0} max={20} className="w-16 h-7 text-xs"
-              value={config.memory as number ?? 0}
-              onChange={(e) => updateConfig("memory", parseInt(e.target.value) || 0)} />
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <Label htmlFor="llm-json-mode" className="text-xs text-muted-foreground">{t("config.jsonMode")}</Label>
-            <Switch id="llm-json-mode" checked={(config.jsonMode as boolean) || false} onCheckedChange={(v) => updateConfig("jsonMode", v)} />
-          </div>
-          <div className="flex items-center justify-between pt-1">
-            <Label htmlFor="llm-enable-tools" className="text-xs text-muted-foreground">{t("config.functionCalling")}</Label>
-            <Switch id="llm-enable-tools" checked={(config.enableTools as boolean) || false} onCheckedChange={(v) => updateConfig("enableTools", v)} />
-          </div>
-        </div>
-      )}
-
-      {/* ===== OUTPUT NODE ===== */}
-      {node.data.type === "output" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t("config.format")}</Label>
-            <Select value={(config.format as string) || "text"} onValueChange={(v) => updateConfig("format", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="json">JSON</SelectItem>
-                <SelectItem value="markdown">Markdown</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="output-template">{t("config.template")}</Label>
-            <Textarea id="output-template" value={(config.template as string) || ""} onChange={(e) => updateConfig("template", e.target.value)} placeholder={t("config.templatePlaceholder")} rows={4} />
-          </div>
-        </div>
-      )}
-
-      {/* ===== HTTP NODE ===== */}
-      {node.data.type === "http" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
-            <div className="space-y-2 col-span-1">
-              <Label>{t("config.httpMethod")}</Label>
-              <Select value={(config.method as string) || "GET"} onValueChange={(v) => updateConfig("method", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="GET">GET</SelectItem>
-                  <SelectItem value="POST">POST</SelectItem>
-                  <SelectItem value="PUT">PUT</SelectItem>
-                  <SelectItem value="DELETE">DELETE</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 col-span-3">
-              <Label htmlFor="http-url">{t("config.httpUrl")}</Label>
-              <Input id="http-url" value={(config.url as string) || ""} onChange={(e) => updateConfig("url", e.target.value)} placeholder="https://api.example.com?city={{city}}" className="text-sm font-mono" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="http-body">{t("config.httpBody")}</Label>
-            <Textarea id="http-body" value={(config.body as string) || ""} onChange={(e) => updateConfig("body", e.target.value)}
-              placeholder='{"key": "{{value}}"}' rows={3} className="text-sm font-mono" />
-            <p className="text-[10px] text-muted-foreground">{t("config.httpBodyHint")}</p>
-          </div>
-          <details className="text-xs">
-            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">{t("config.httpAuth")}</summary>
-            <div className="mt-2 space-y-2">
-              <Select value={(config.auth as string) || "none"} onValueChange={(v) => v && updateConfig("auth", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">{t("config.authNone")}</SelectItem>
-                  <SelectItem value="bearer">{t("config.authBearer")}</SelectItem>
-                  <SelectItem value="basic">{t("config.authBasic")}</SelectItem>
-                  <SelectItem value="api_key">{t("config.authApiKey")}</SelectItem>
-                </SelectContent>
-              </Select>
-              {((config.auth as string) || "none") === "bearer" && (
-                <Input value={(config.authToken as string) || ""} onChange={(e) => updateConfig("authToken", e.target.value)} placeholder="Bearer token..." className="text-sm font-mono" />
-              )}
-              {((config.auth as string) || "none") === "basic" && (
-                <>
-                  <Input value={(config.authUsername as string) || ""} onChange={(e) => updateConfig("authUsername", e.target.value)} placeholder={t("config.authUsername")} className="text-sm" />
-                  <Input type="password" value={(config.authPassword as string) || ""} onChange={(e) => updateConfig("authPassword", e.target.value)} placeholder={t("config.authPassword")} className="text-sm" />
-                </>
-              )}
-              {((config.auth as string) || "none") === "api_key" && (
-                <Input value={(config.authToken as string) || ""} onChange={(e) => updateConfig("authToken", e.target.value)} placeholder="API Key..." className="text-sm font-mono" />
-              )}
-              {((config.auth as string) || "none") === "basic" && (
-                <>
-                  <Input value={(config.authUsername as string) || ""} onChange={(e) => updateConfig("authUsername", e.target.value)}
-                    placeholder="用户名" className="text-sm" />
-                  <Input type="password" value={(config.authPassword as string) || ""} onChange={(e) => updateConfig("authPassword", e.target.value)}
-                    placeholder="密码" className="text-sm" />
-                </>
-              )}
-              {((config.auth as string) || "none") === "api_key" && (
-                <Input value={(config.authToken as string) || ""} onChange={(e) => updateConfig("authToken", e.target.value)}
-                  placeholder="API Key..." className="text-sm font-mono" />
-              )}
-            </div>
-          </details>
-        </div>
-      )}
-
-      {/* ===== CONDITION NODE ===== */}
-      {node.data.type === "condition" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t("config.conditionLeft")}</Label>
-            <Input value={(config.left as string) || ""} onChange={(e) => updateConfig("left", e.target.value)}
-              placeholder="{{ $node.wc1.text }}" className="text-sm font-mono" />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("config.conditionOperator")}</Label>
-            <Select value={(config.operator as string) || "=="} onValueChange={(v) => updateConfig("operator", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="==">{t("config.opEquals")}</SelectItem>
-                <SelectItem value="!=">{t("config.opNotEquals")}</SelectItem>
-                <SelectItem value=">">{t("config.opGreater")}</SelectItem>
-                <SelectItem value="<">{t("config.opLess")}</SelectItem>
-                <SelectItem value=">=">{t("config.opGreaterEq")}</SelectItem>
-                <SelectItem value="<=">{t("config.opLessEq")}</SelectItem>
-                <SelectItem value="contains">{t("config.opContains")}</SelectItem>
-                <SelectItem value="not_contains">{t("config.opNotContains")}</SelectItem>
-                <SelectItem value="starts_with">{t("config.opStartsWith")}</SelectItem>
-                <SelectItem value="ends_with">{t("config.opEndsWith")}</SelectItem>
-                <SelectItem value="regex">{t("config.opRegex")}</SelectItem>
-                <SelectItem value="is_empty">{t("config.opIsEmpty")}</SelectItem>
-                <SelectItem value="is_not_empty">{t("config.opNotEmpty")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("config.conditionRight")}</Label>
-            <Input value={(config.right as string) || ""} onChange={(e) => updateConfig("right", e.target.value)}
-              placeholder="Beijing" className="text-sm font-mono" />
-          </div>
-          <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950 text-xs space-y-1">
-            <p className="font-semibold">{t("config.conditionHintTrue")}</p>
-            <p className="font-semibold">{t("config.conditionHintFalse")}</p>
-            <p className="text-muted-foreground mt-1">{t("config.conditionHintDesc")}</p>
-          </div>
-        </div>
-      )}
-
-      {/* ===== MERGE NODE ===== */}
-      {node.data.type === "merge" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>汇聚策略</Label>
-            <Select value={(config.strategy as string) || "concat"} onValueChange={(v) => updateConfig("strategy", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="concat">拼接文本</SelectItem>
-                <SelectItem value="json_array">JSON 数组</SelectItem>
-                <SelectItem value="first">取第一个</SelectItem>
-                <SelectItem value="last">取最后一个</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-xs">
-            将多个上游节点的输出按策略汇聚。常用于 IF/ELSE 分支后合并结果。
-          </div>
-        </div>
-      )}
-
-      {/* ===== CRON TRIGGER NODE ===== */}
-      {node.data.type === "cron_trigger" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="cron-name">{t("config.cronName")}</Label>
-            <Input id="cron-name" value={(config.name as string) || ""} onChange={(e) => updateConfig("name", e.target.value)} placeholder={t("config.cronNamePlaceholder")} />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("config.cronFrequency")}</Label>
-            <Select
-              value={cronFrequency}
-              onValueChange={(v) => {
-                if (!v) return
-                setCronFrequency(v)
-                if (v === "hourly") { updateConfig("frequency", v); updateConfig("cronExpr", "0 * * * *") }
-                else if (v === "weekday") { updateConfig("frequency", v); updateConfig("cronExpr", `${cronMinute} ${cronHour} * * 1-5`) }
-                else if (v === "daily") { updateConfig("frequency", v); updateConfig("cronExpr", `${cronMinute} ${cronHour} * * *`) }
-                else if (v.startsWith("weekly-")) { updateConfig("frequency", v); updateConfig("cronExpr", `${cronMinute} ${cronHour} * * ${v.split("-")[1]}`) }
-              }}
-            >
-              <SelectTrigger className="w-full">
-                <span className="text-sm">{cronFrequencyLabel[cronFrequency] || cronFrequency}</span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="hourly">{t("config.cronHourly")}</SelectItem>
-                <SelectItem value="daily">{t("config.cronDaily")}</SelectItem>
-                <SelectItem value="weekday">{t("config.cronWeekday")}</SelectItem>
-                <SelectItem value="weekly-1">{t("config.cronMonday")}</SelectItem>
-                <SelectItem value="weekly-2">{t("config.cronTuesday")}</SelectItem>
-                <SelectItem value="weekly-3">{t("config.cronWednesday")}</SelectItem>
-                <SelectItem value="weekly-4">{t("config.cronThursday")}</SelectItem>
-                <SelectItem value="weekly-5">{t("config.cronFriday")}</SelectItem>
-                <SelectItem value="weekly-6">{t("config.cronSaturday")}</SelectItem>
-                <SelectItem value="weekly-0">{t("config.cronSunday")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {(() => {
-            if (cronFrequency === "hourly") return null
-            return (
-              <div className="space-y-2">
-                <Label>{t("config.cronTime")}</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Select value={cronHour} onValueChange={(v) => {
-                    if (!v) return
-                    setCronHour(v)
-                    updateConfig("cronExpr", `${cronMinute} ${v} * * *`)
-                  }}>
-                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-48">
-                      {Array.from({length: 24}, (_, i) => (
-                        <SelectItem key={i} value={String(i)}>{String(i).padStart(2, "0")}:00</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={cronMinute} onValueChange={(v) => {
-                    if (!v) return
-                    setCronMinute(v)
-                    updateConfig("cronExpr", `${v} ${cronHour} * * *`)
-                  }}>
-                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent className="max-h-48">
-                      {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
-                        <SelectItem key={m} value={String(m)}>{String(m).padStart(2, "0")}{t("config.cronMinute")}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )
-          })()}
-          <div className="p-3 rounded-lg bg-teal-50 dark:bg-teal-950 text-xs text-muted-foreground">
-            {t("config.cronHint")}
-          </div>
-        </div>
-      )}
-
-      {/* ===== FEISHU NODE ===== */}
-      {node.data.type === "feishu" && (
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t("config.feishuMode")}</Label>
-            <Select value={(config.mode as string) || "send"} onValueChange={(v) => updateConfig("mode", v)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="send">{t("config.feishuSend")}</SelectItem>
-                <SelectItem value="receive">{t("config.feishuReceive")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground">{t("config.feishuModeHint")}</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="feishu-app-id">{t("config.feishuAppId")}</Label>
-            <Input id="feishu-app-id" value={(config.appId as string) || ""} onChange={(e) => updateConfig("appId", e.target.value)} placeholder={t("config.feishuAppIdPlaceholder")} className="text-sm font-mono" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="feishu-app-secret">{t("config.feishuAppSecret")}</Label>
-            <Input id="feishu-app-secret" type="password" value={(config.appSecret as string) || ""} onChange={(e) => updateConfig("appSecret", e.target.value)} placeholder={t("config.feishuAppSecretPlaceholder")} className="text-sm font-mono" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="feishu-verification-token">{t("config.feishuVerificationToken")}</Label>
-            <Input id="feishu-verification-token" type="password" value={(config.verificationToken as string) || ""} onChange={(e) => updateConfig("verificationToken", e.target.value)} placeholder="xxxxxxxx" className="text-sm font-mono" />
-            <p className="text-[10px] text-muted-foreground">{t("config.feishuCredHint")}</p>
-          </div>
-          <Separator />
-
-          {((config.mode as string) || "send") === "send" && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="feishu-webhook">{t("config.feishuWebhook")}</Label>
-                <Input id="feishu-webhook" value={(config.webhookUrl as string) || ""} onChange={(e) => updateConfig("webhookUrl", e.target.value)} placeholder={t("config.feishuWebhookPlaceholder")} className="text-sm font-mono" />
-                <p className="text-[10px] text-muted-foreground">{t("config.feishuWebhookOrApp")}</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="feishu-message">{t("config.feishuMessage")}</Label>
-                <Textarea id="feishu-message" value={(config.message as string) || ""} onChange={(e) => updateConfig("message", e.target.value)} placeholder={t("config.feishuMessagePlaceholder")} rows={4} className="text-sm" />
-                <p className="text-[10px] text-muted-foreground">{t("config.feishuMessageHint")}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>{t("config.feishuMsgType")}</Label>
-                <Select value={(config.msgType as string) || "text"} onValueChange={(v) => updateConfig("msgType", v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="text">{t("config.feishuText")}</SelectItem>
-                    <SelectItem value="markdown">{t("config.feishuMarkdown")}</SelectItem>
-                    <SelectItem value="interactive">{t("config.feishuInteractive")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
-
-          {((config.mode as string) || "send") === "receive" && (
-            <div className="space-y-2">
-              <Label htmlFor="feishu-message">{t("config.feishuFallback")}</Label>
-              <Textarea id="feishu-message" value={(config.message as string) || ""} onChange={(e) => updateConfig("message", e.target.value)} placeholder={t("config.feishuFallbackPlaceholder")} rows={3} className="text-sm" />
-              <p className="text-[10px] text-muted-foreground">{t("config.feishuReceiveHint")}</p>
-              <div className="mt-2 p-3 rounded-lg bg-muted text-xs font-mono break-all">
-                <p className="font-semibold mb-1">{t("config.feishuCallbackUrl")}:</p>
-                <p>{process.env.NEXT_PUBLIC_APP_URL || "https://your-app.com"}/api/feishu/callback</p>
-          </div>
-        </div>
-      )}
-        </div>
+      {ConfigComponent ? <ConfigComponent key={node.id} node={node} /> : (
+        <p className="text-sm text-muted-foreground">{t("config.noConfig")}</p>
       )}
 
       <Separator />

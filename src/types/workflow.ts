@@ -1,3 +1,8 @@
+// ============================================================
+// 工作流核心类型定义
+// ============================================================
+
+/** 工作流配置（列表项） */
 export interface WorkflowConfig {
   id: string
   name: string
@@ -7,13 +12,34 @@ export interface WorkflowConfig {
   updatedAt: string
 }
 
-export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger"
+/** 节点类型联合类型 —— 添加新节点时需同步更新 */
+export type NodeType = "input" | "llm" | "output" | "feishu" | "http" | "condition" | "merge" | "cron_trigger" | "music" | "knowledge_search" | "code" | "delay" | "loop"
 
+/** 节点 data 字段结构 */
 export interface WorkflowNodeData extends Record<string, unknown> {
   type: NodeType
   label: string
   config: Record<string, unknown>
 }
+
+/** 画布中的节点 */
+export interface WorkflowNode {
+  id: string
+  type: NodeType
+  position: { x: number; y: number }
+  data: WorkflowNodeData
+}
+
+/** 画布中的边（连线） */
+export interface WorkflowEdge {
+  id: string
+  source: string
+  target: string
+  sourceHandle?: string
+  targetHandle?: string
+}
+
+// ---- 各节点配置接口 ----
 
 export interface InputNodeConfig {
   name: string
@@ -30,6 +56,9 @@ export interface LLMNodeConfig {
   systemPrompt: string
   temperature: number
   maxTokens: number
+  credentialId?: string
+  /** 工具调用最大交互轮数（1-20，默认 8）；无工具时无效 */
+  maxSteps?: number
 }
 
 export interface ConditionNodeConfig {
@@ -62,23 +91,77 @@ export interface FeishuNodeConfig {
 export interface OutputNodeConfig {
   format: "text" | "json" | "markdown"
   template?: string
+  exportMode: "download" | "local" | "remote"
+  exportPath: string
+  remoteUrl: string
 }
 
-export interface WorkflowEdge {
-  id: string
-  source: string
-  target: string
-  sourceHandle?: string
-  targetHandle?: string
+export interface MusicNodeConfig {
+  apiUrl: string
+  method: "POST" | "GET"
+  headers: Record<string, string>
+  bodyTemplate: string
+  auth: "none" | "bearer" | "api_key"
+  authToken: string
+  pollingEnabled: boolean
+  taskIdField: string
+  pollUrlTemplate: string
+  pollIntervalMs: number
+  pollMaxAttempts: number
+  pollStatusField: string
+  pollSuccessValue: string
+  audioUrlField: string
+  metadataField: string
+  credentialId?: string
 }
 
-export interface WorkflowNode {
-  id: string
-  type: NodeType
-  position: { x: number; y: number }
-  data: WorkflowNodeData
+export interface KnowledgeSearchNodeConfig {
+  /** 知识库文档 ID；空 = 全库检索 */
+  knowledgeId?: string
+  topK: number
+  /** 作为输出上下文的查询模板，支持 {{ }} 占位；空 = 拼接上游 raw 输出 */
+  queryTemplate?: string
 }
 
+export interface CodeNodeConfig {
+  /** JS 脚本（可用变量：input/items/query） */
+  code: string
+  /** 超时毫秒（50~30000，默认 3000）；含循环的脚本走 worker 通道强制打断 */
+  timeoutMs?: number
+}
+
+export interface DelayNodeConfig {
+  /** 延时毫秒（上限 5 分钟，默认 1000） */
+  durationMs?: number
+}
+
+export interface LoopNodeConfig {
+  /** 数组来源表达式（如 {{ $node.knowledge_search-1.results }} 或 JSON 数组字符串） */
+  sourcePath: string
+  /** 逐项求值模板，$item 为当前项；空 = 取项本身 */
+  itemTemplate?: string
+}
+
+// ---- 执行相关类型 ----
+
+// ---- Agent 工具调用步骤 ----
+
+/** 一次工具调用的日志记录（写入 ExecutionLog.steps） */
+export interface ToolCallStep {
+  toolName: string
+  argsSummary: string      // 参数 JSON 摘要（超长截断）
+  resultSummary: string    // 结果 JSON 摘要（超长截断）
+  durationMs: number
+}
+
+/** 工具调用概要（随节点输出发给下游节点/调试面板使用） */
+export interface ToolCallInfo {
+  name: string
+  args?: unknown
+  summary: string
+}
+
+/** 单节点执行日志 */
 export interface ExecutionLog {
   nodeId: string
   nodeType: NodeType
@@ -88,8 +171,10 @@ export interface ExecutionLog {
   error?: string
   timestamp: string
   durationMs?: number
+  steps?: ToolCallStep[]   // Agent 工具调用明细（仅工具型节点产出）
 }
 
+/** 工作流执行结果 */
 export interface ExecutionResult {
   executionId: string
   workflowId: string
@@ -100,15 +185,50 @@ export interface ExecutionResult {
   durationMs?: number
 }
 
+/** 执行上下文：在工作流执行期间传递的状态 */
 export interface ExecutionContext {
   workflowId: string
   executionId: string
   input: Record<string, unknown>
-  nodeResults: Map<string, unknown>
+  nodeResults: Map<string, unknown>   // nodeId → 输出结果
   logs: ExecutionLog[]
+  workflowExtensions?: ExtensionBindings   // 工作流级扩展绑定(执行入口加载)
 }
 
+/** 节点执行器函数签名 */
 export type NodeExecutor = (
   node: WorkflowNode,
   context: ExecutionContext,
 ) => Promise<unknown>
+
+// ============================================================
+// 扩展包系统类型定义
+// ============================================================
+
+/** MCP 绑定(含工具/资源/prompts 选择) */
+export interface McpBinding {
+  serverId: string
+  tools?: string[] | "all"            // 默认 "all"
+  resources?: string[]                // 默认 []
+  prompts?: string[]                  // 默认 []
+}
+
+/** 按 packId 引用技能包中的技能 */
+export interface SkillPackBinding {
+  packId: string
+}
+
+/** 按 packId 引用技能包中的 MCP server（可多个） */
+export interface McpPackBinding {
+  packId: string
+  tools?: string[] | "all"
+  resources?: string[]
+  prompts?: string[]
+}
+
+/** 扩展包绑定(Skills + Prompts + MCP) */
+export interface ExtensionBindings {
+  skills: Array<string | SkillPackBinding>
+  prompts: Array<string | SkillPackBinding>
+  mcp: Array<McpBinding | McpPackBinding>
+}

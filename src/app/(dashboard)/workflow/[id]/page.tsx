@@ -8,11 +8,15 @@ import { NodePanel } from "@/components/canvas/NodePanel"
 import { ConfigPanel } from "@/components/canvas/ConfigPanel"
 import { Toolbar } from "@/components/panels/Toolbar"
 import { Loader2 } from "lucide-react"
+import { useTranslation } from "@/i18n"
+import { rewriteTemplateIds } from "@/lib/template-ids"
+import type { NodeType, WorkflowNode, WorkflowEdge } from "@/types/workflow"
 
 export default function WorkflowEditorPage() {
   const params = useParams()
   const workflowId = params.id as string
   const isNew = workflowId === "new"
+  const { t } = useTranslation()
 
   const {
     setWorkflowId,
@@ -23,13 +27,63 @@ export default function WorkflowEditorPage() {
 
   useEffect(() => {
     if (isNew) {
-      // Reset store for new workflow
-      setWorkflow(
-        { id: "", name: "未命名工作流", description: "", config: {}, createdAt: "", updatedAt: "" },
-        [], [],
-      )
-      setWorkflowId(null)
-      setLoading(false)
+      const searchParams = new URLSearchParams(window.location.search)
+      const templateId = searchParams.get("template")
+
+      if (templateId) {
+        const lang = localStorage.getItem("workflow-locale") || "zh"
+        fetch(`/api/templates/${templateId}?lang=${lang}`)
+          .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`template ${templateId} not found`))))
+          .then((tpl) => {
+            // 节点 ID 在数据库中全局唯一，为模板生成的节点/边添加前缀避免冲突
+            const prefix = `t_${Date.now().toString(36)}_`
+            const idMap = new Map<string, string>()
+            const rawNodes = tpl.nodes as Array<{
+              id: string
+              type: NodeType
+              position: { x: number; y: number }
+              data: WorkflowNode["data"]
+            }>
+            for (const n of rawNodes) {
+              idMap.set(n.id, `${prefix}${n.id}`)
+            }
+            const nodes: WorkflowNode[] = rawNodes.map((n) => ({
+              id: idMap.get(n.id) || n.id,
+              type: n.type,
+              position: n.position,
+              data: rewriteTemplateIds(n.data, idMap) as WorkflowNode["data"],
+            }))
+            const edges: WorkflowEdge[] = (tpl.edges as Array<{
+              id: string
+              source: string
+              target: string
+              sourceHandle?: string | null
+              targetHandle?: string | null
+            }>).map((e) => ({
+              id: `${prefix}${e.id}`,
+              source: idMap.get(e.source) || e.source,
+              target: idMap.get(e.target) || e.target,
+              sourceHandle: e.sourceHandle || undefined,
+              targetHandle: e.targetHandle || undefined,
+            }))
+            setWorkflow(
+              { id: "", name: tpl.name, description: tpl.description, config: {}, createdAt: "", updatedAt: "" },
+              nodes,
+              edges,
+            )
+            setWorkflowId(null)
+          })
+          .catch(console.error)
+          .finally(() => setLoading(false))
+      } else {
+        // Reset store for new workflow
+        setWorkflow(
+          { id: "", name: t("workflow.untitled"), description: "", config: {}, createdAt: "", updatedAt: "" },
+          [], [],
+        )
+        setWorkflowId(null)
+        setLoading(false)
+      }
       return
     }
 

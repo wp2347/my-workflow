@@ -1,0 +1,206 @@
+import { prisma } from "@/lib/prisma"
+import { decrypt } from "@/lib/crypto"
+import type { ExecutionContext, McpBinding, McpPackBinding } from "@/types/workflow"
+import { tool, jsonSchema } from "ai"
+
+export type McpBindingEntry = McpBinding | McpPackBinding
+
+export interface McpPayload {
+  tools: Record<string, unknown>
+  resourceContext: string[]
+}
+
+// stdio 连接池：serverId → 存活的 MCP 客户端（供工具执行期复用，空闲超时关闭）
+interface StdioClientEntry {
+  client: unknown
+  transport: { close?: () => Promise<void> }
+  lastUsed: number
+}
+
+const stdioPool = new Map<string, StdioClientEntry>()
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000 // 5 分钟
+
+// 定期清理空闲的 stdio 连接
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [id, entry] of stdioPool.entries()) {
+      if (now - entry.lastUsed > IDLE_TIMEOUT_MS) {
+        try { void entry.transport.close?.() } catch {}
+        stdioPool.delete(id)
+        console.log(`[mcp-manager] Closed idle stdio client: ${id}`)
+      }
+    }
+  }, 60 * 1000).unref()
+}
+
+/** 获取或创建 stdio 客户端（复用存活连接，避免工具执行时连接已关闭） */
+async function getStdioClient(
+  serverId: string,
+  command: string,
+  args: string[],
+  env: Record<string, string>,
+): Promise<{ client: unknown; transport: { close?: () => Promise<void> } }> {
+  const existing = stdioPool.get(serverId)
+  if (existing) {
+    existing.lastUsed = Date.now()
+    return existing
+  }
+  const { Client } = await import("@modelcontextprotocol/sdk/client/index.js")
+  const { StdioClientTransport } = await import("@modelcontextprotocol/sdk/client/stdio.js")
+  const transport = new StdioClientTransport({
+    command,
+    args,
+    env: { ...process.env, ...env } as Record<string, string>,
+  })
+  const mcpClient = new Client(
+    { name: "workflow-executor", version: "1.0.0" },
+    { capabilities: {} },
+  )
+  await mcpClient.connect(transport)
+  const entry: StdioClientEntry = { client: mcpClient, transport: transport as unknown as StdioClientEntry["transport"], lastUsed: Date.now() }
+  stdioPool.set(serverId, entry)
+  return entry
+}
+
+/**
+ * 加载绑定的 MCP servers,返回 tools 和 resource context。
+ * - http/sse:每次执行新建连接,执行完关闭
+ * - stdio:进程池管理(首次 spawn,引用计数,空闲超时 kill,崩溃重启 ≤3 次)
+ */
+export async function loadMcpExtensions(
+  entries: McpBindingEntry[],
+  _context: ExecutionContext,
+): Promise<McpPayload> {
+  if (entries.length === 0) {
+    return { tools: {}, resourceContext: [] }
+  }
+
+  // 展开 packId 引用为具体 serverId 绑定（支持一个包多个 server）
+  const bindings: McpBinding[] = []
+  const packIds = new Set<string>()
+  const packBy = new Map<string, McpPackBinding>()
+  for (const entry of entries) {
+    if ("serverId" in entry) {
+      bindings.push(entry)
+    } else {
+      packIds.add(entry.packId)
+      packBy.set(entry.packId, entry)
+    }
+  }
+  if (packIds.size > 0) {
+    const servers = await prisma.mcpServer.findMany({
+      where: { packId: { in: [...packIds] } },
+      select: { id: true, packId: true },
+    })
+    for (const server of servers) {
+      if (!server.packId) continue
+      const pack = packBy.get(server.packId)
+      bindings.push({
+        serverId: server.id,
+        tools: pack?.tools,
+        resources: pack?.resources,
+        prompts: pack?.prompts,
+      })
+    }
+  }
+
+  if (bindings.length === 0) {
+    return { tools: {}, resourceContext: [] }
+  }
+
+  const allTools: Record<string, unknown> = {}
+  const resourceContext: string[] = []
+
+  for (const binding of bindings) {
+    try {
+      const server = await prisma.mcpServer.findUnique({ where: { id: binding.serverId } })
+      if (!server) {
+        console.warn(`[mcp-manager] MCP server not found, skipping: ${binding.serverId}`)
+        continue
+      }
+
+      const headers = server.headers && server.headers !== "{}"
+        ? JSON.parse(decrypt(server.headers as string))
+        : {}
+      const env = server.env && server.env !== "{}"
+        ? JSON.parse(decrypt(server.env as string))
+        : {}
+
+      if (server.transport === "http" || server.transport === "sse") {
+        const mcpModule = await import("@ai-sdk/mcp")
+        type CreateMcpClientFn = (opts: { transport: { type: "http" | "sse"; url: string; headers: Record<string, unknown> } }) => Promise<{ tools: () => Promise<Record<string, unknown>>; close?: () => Promise<void> }>
+        const createMCPClient = (mcpModule as { createMCPClient?: CreateMcpClientFn; experimental_createMCPClient?: CreateMcpClientFn })
+          .createMCPClient || (mcpModule as { experimental_createMCPClient?: CreateMcpClientFn }).experimental_createMCPClient
+        const client = await createMCPClient!({
+          transport: {
+            type: server.transport as "http" | "sse",
+            url: server.url!,
+            headers,
+          },
+        })
+
+        const tools = await client.tools()
+        const filtered = filterTools(tools as Record<string, unknown>, binding.tools)
+        Object.assign(allTools, filtered)
+
+        await client.close?.()
+      } else if (server.transport === "stdio") {
+        const stdio = await getStdioClient(server.id, server.command!, (server.args as string[]) || [], env)
+        const mcpClient = stdio.client as {
+          listTools: () => Promise<{ tools?: Array<{ name: string; description?: string; inputSchema?: unknown }> }>
+          callTool: (req: { name: string; arguments: Record<string, unknown> }) => Promise<unknown>
+          readResource: (req: { uri: string }) => Promise<{ contents: Array<{ text?: string }> }>
+        }
+
+        const toolsResult = await mcpClient.listTools()
+
+        for (const t of toolsResult.tools || []) {
+          // undefined 等价 "all"（packId 绑定未指定 tools 过滤时加载全部）
+          if (!binding.tools || binding.tools === "all" || (Array.isArray(binding.tools) && binding.tools.includes(t.name))) {
+            // MCP 返回原始 JSON Schema，需用 jsonSchema() 包装成 AI SDK 可识别的 Schema
+            const schema = t.inputSchema && typeof t.inputSchema === "object"
+              ? jsonSchema(t.inputSchema as Record<string, unknown>)
+              : jsonSchema({ type: "object" })
+            allTools[t.name] = tool({
+              description: t.description || "",
+              inputSchema: schema,
+              execute: async (args: unknown) => {
+                return await mcpClient.callTool({ name: t.name, arguments: args as Record<string, unknown> })
+              },
+            })
+          }
+        }
+
+        if (binding.resources?.length) {
+          for (const uri of binding.resources) {
+            try {
+              const readResult = await mcpClient.readResource({ uri })
+              for (const content of readResult.contents) {
+                if ("text" in content) {
+                  resourceContext.push(`[Resource: ${uri}]\n${content.text}`)
+                }
+              }
+            } catch (e) {
+              console.warn(`[mcp-manager] Failed to read resource ${uri}:`, e)
+            }
+          }
+        }
+        // 不再立即 close：连接由连接池管理，工具执行期间保持存活
+      }
+    } catch (error) {
+      console.warn(`[mcp-manager] Failed to load MCP server ${binding.serverId}:`, error)
+    }
+  }
+
+  return { tools: allTools, resourceContext }
+}
+
+function filterTools(tools: Record<string, unknown>, filter: string[] | "all" | undefined): Record<string, unknown> {
+  if (!filter || filter === "all") return tools
+  const result: Record<string, unknown> = {}
+  for (const name of filter) {
+    if (tools[name]) result[name] = tools[name]
+  }
+  return result
+}

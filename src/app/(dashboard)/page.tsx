@@ -19,8 +19,8 @@ export default function DashboardPage() {
       <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardHeader>
-            <div className="rounded-md bg-blue-100 p-2 w-fit mb-2">
-              <MessageSquare className="h-5 w-5 text-blue-600" />
+            <div className="rounded-md bg-node-input-bg p-2 w-fit mb-2">
+              <MessageSquare className="h-5 w-5 text-node-input" />
             </div>
             <CardTitle className="text-base">{t("home.inputNodes")}</CardTitle>
             <CardDescription>{t("home.inputNodesDesc")}</CardDescription>
@@ -28,8 +28,8 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <div className="rounded-md bg-purple-100 p-2 w-fit mb-2">
-              <Brain className="h-5 w-5 text-purple-600" />
+            <div className="rounded-md bg-node-llm-bg p-2 w-fit mb-2">
+              <Brain className="h-5 w-5 text-node-llm" />
             </div>
             <CardTitle className="text-base">{t("home.llmNodes")}</CardTitle>
             <CardDescription>{t("home.llmNodesDesc")}</CardDescription>
@@ -37,8 +37,8 @@ export default function DashboardPage() {
         </Card>
         <Card>
           <CardHeader>
-            <div className="rounded-md bg-green-100 p-2 w-fit mb-2">
-              <BookOpen className="h-5 w-5 text-green-600" />
+            <div className="rounded-md bg-node-output-bg p-2 w-fit mb-2">
+              <BookOpen className="h-5 w-5 text-node-output" />
             </div>
             <CardTitle className="text-base">{t("home.outputNodes")}</CardTitle>
             <CardDescription>{t("home.outputNodesDesc")}</CardDescription>
